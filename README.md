@@ -1,14 +1,13 @@
-# puppet-run
+# 🤖 puppet-run
 
 Run anything JavaScript in a headless Chrome from your command line 🔥
 
 Transparently bundles your input files using the [Parcel bundler](https://parceljs.org). Why? Because [Karma](https://karma-runner.github.io) sucks.
 
-- Runs any script in a headless browser
-- Zero-config transparent bundling
-- Supports TypeScript, React, Vue out of the box
-- Pipes console output and errors to host shell
-
+🚀&nbsp;&nbsp;Runs any script in a headless browser<br />
+📦&nbsp;&nbsp;Zero-config transparent bundling<br />
+💡&nbsp;&nbsp;Supports TypeScript, React, Vue out of the box<br />
+🖥&nbsp;&nbsp;Pipes console output and errors to host shell<br />
 
 ## Installation
 
