@@ -60,7 +60,7 @@ export async function spawnPuppet (bundle: ParcelBundle): Promise<Puppet> {
     async waitForExit () {
       return puppetExit
     },
-    off: page.off.bind(page),
+    off: page.removeListener.bind(page),
     on: page.on.bind(page),
     once: page.once.bind(page),
   }
