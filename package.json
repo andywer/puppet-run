@@ -4,7 +4,7 @@
   "license": "MIT",
   "description": "Run anything JavaScript in a headless Chrome from your command line.",
   "author": "Andy Wermke (https://github.com/andywer)",
-  "repository": "github:andywer/http-event-stream",
+  "repository": "github:andywer/puppet-run",
   "bin": "./dist/cli.js",
   "scripts": {
     "build": "tsc",
