@@ -1,8 +1,8 @@
 import Bundler from "parcel-bundler"
 import { TemporaryFileCache } from "./temporary"
 
-async function createBundle (filePath: string, cache: TemporaryFileCache) {
-  const bundler = new Bundler(filePath, {
+async function createBundle (entryPaths: string[], cache: TemporaryFileCache) {
+  const bundler = new Bundler(entryPaths, {
     cache: true,
     logLevel: 2,
     minify: false,
