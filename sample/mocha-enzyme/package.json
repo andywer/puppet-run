@@ -1,0 +1,24 @@
+{
+  "name": "puppet-run-sample-mocha-enzyme",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "test": "puppet-run plugin:mocha ./test"
+  },
+  "devDependencies": {
+    "@types/chai": "^4.1.7",
+    "@types/enzyme": "^3.1.15",
+    "@types/enzyme-adapter-react-16": "^1.0.3",
+    "@types/mocha": "^5.2.5",
+    "chai": "^4.2.0",
+    "enzyme": "^3.7.0",
+    "enzyme-adapter-react-16": "^1.7.0",
+    "mocha": "^5.2.0",
+    "puppet-run": "^0.2.0",
+    "puppet-run-plugin-mocha": "^0.1.1"
+  },
+  "dependencies": {
+    "react": "^16.6.3",
+    "react-dom": "^16.6.3"
+  }
+}

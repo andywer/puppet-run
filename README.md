@@ -102,11 +102,11 @@ If you want to run tests in the browser using puppet-run, check out this list fi
 
 #### ✅ Mocha
 
-Works like a charm. See [`sample/mocha-test.ts`](./sample/mocha-test.ts) and don't forget to `npm install mocha chai @types/mocha @types/chai`.
+Works like a charm, see [`sample/mocha`](./sample/mocha) or [`sample/mocha-enzyme`](./sample/mocha-enzyme).
 
 #### ✅ Tape
 
-Works like a charm. See [`sample/tape-test.ts`](./sample/tape-test.ts) and don't forget to `npm install tape @types/tape`.
+Works like a charm, see [`sample/tape`](./sample/tape).
 
 #### ❌ AVA
 
