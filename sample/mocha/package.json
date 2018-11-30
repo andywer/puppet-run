@@ -1,0 +1,16 @@
+{
+  "name": "puppet-run-sample-mocha",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "test": "puppet-run plugin:mocha ./test.ts"
+  },
+  "devDependencies": {
+    "@types/chai": "^4.1.7",
+    "@types/mocha": "^5.2.5",
+    "chai": "^4.2.0",
+    "mocha": "^5.2.0",
+    "puppet-run": "^0.2.0",
+    "puppet-run-plugin-mocha": "^0.1.1"
+  }
+}

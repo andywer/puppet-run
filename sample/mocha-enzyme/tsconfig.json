@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
+    "downlevelIteration": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "target": "es5",
+    "module": "commonjs",
+    "jsx": "react",
+    "lib": ["dom", "es2015"],
+    "outDir": "dist",
+    "declaration": true,
+    "strict": true
+  },
+  "include": [
+    "./*.tsx"
+  ]
+}
