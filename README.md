@@ -61,6 +61,26 @@ npx puppet-run ./cowsays.js
 Have fun!
 
 
+## Plugins
+
+Plugins make it easy to integrate your script with testing frameworks or other external functionality. Check out the [plugins repository](https://github.com/andywer/puppet-run-plugins).
+
+Here is how to use the mocha plugin:
+
+```sh
+npm install puppet-run-plugin-mocha
+npx puppet-run plugin:mocha ./*.test.js [--reporter "spec"]
+```
+
+This way you can just pass an arbitrary usual mocha test file without having to care about `puppet.exit()` or any boilerplate code.
+
+You can also get help how to use a plugin:
+
+```sh
+npx puppet-run plugin:mocha --help
+```
+
+
 ## Scripting API
 
 The script runner will inject a `puppet` object into the browser window's global scope. It contains a couple of useful functions.
