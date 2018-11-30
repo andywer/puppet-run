@@ -1,5 +1,10 @@
 import { ConsoleMessage, Page } from "puppeteer-core"
 
+export interface PuppetContextConfig<PluginsConfig extends {} = any> {
+  argv: string[],
+  plugins: PluginsConfig
+}
+
 const magicLogMessageMarker = "$$$PUPPET_MAGIC_LOG$$$"
 
 async function consoleMessageToLogArgs (message: ConsoleMessage) {
@@ -45,11 +50,19 @@ export function capturePuppetConsole (page: Page) {
   })
 }
 
-export async function injectPuppetContext (page: Page, argv: string[]) {
+export function createPuppetContextConfig (argv: string[], plugins: any = {}) {
+  return {
+    argv,
+    plugins
+  }
+}
+
+export async function injectPuppetContext (page: Page, contextConfig: PuppetContextConfig) {
   await page.addScriptTag({
     content: `
       window.puppet = {
-        argv: ${JSON.stringify(argv)},
+        argv: ${JSON.stringify(contextConfig.argv)},
+        plugins: ${JSON.stringify(contextConfig.plugins)},
         exit: (exitCode = 0) => {
           console.log(${JSON.stringify(magicLogMessageMarker)}, "exit", exitCode);
         }

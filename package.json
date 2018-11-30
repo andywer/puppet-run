@@ -22,6 +22,8 @@
     "testing"
   ],
   "dependencies": {
+    "chai": "^4.2.0",
+    "dedent": "^0.7.0",
     "meow": "^5.0.0",
     "parcel-bundler": "^1.10.3",
     "puppeteer-core": "^1.10.0",
@@ -30,6 +32,7 @@
   },
   "devDependencies": {
     "@types/debug": "0.0.30",
+    "@types/dedent": "^0.7.0",
     "@types/meow": "^5.0.0",
     "@types/node": "^10.9.4",
     "@types/parcel-bundler": "^1.10.1",
