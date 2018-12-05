@@ -26,7 +26,7 @@ function loadPluginModule (packageName: string, pluginName: string): any {
     return require(modulePath)
   } catch (error) {
     throw new Error(
-      `Cannot load plugin ${pluginName}. Module could not be loaded: ${packageName}\n` +
+      `Cannot load plugin ${pluginName}. Module could not be loaded: ${packageName}\n\n` +
       `Try installing the module:\n\n` +
       `    npm install --save-dev ${packageName}\n\n` +
       `Caught error: ${error.message}\n`
