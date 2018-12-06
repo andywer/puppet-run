@@ -31,8 +31,8 @@ export function getChromeLocation () {
       , process.env['PROGRAMFILES(X86)']
     ]
 
-    for (let i = 0; i < prefixes.length; i++) {
-      const exe = prefixes[i] + suffix
+    for (const prefix of prefixes) {
+      const exe = prefix + suffix
       if (fs.existsSync(exe)) {
         return exe
       }

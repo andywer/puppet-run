@@ -1,3 +1,4 @@
+// tslint:disable:no-console
 import { ConsoleMessage, Page } from "puppeteer-core"
 
 export interface PuppetContextConfig<PluginsConfig extends {} = any> {
@@ -72,6 +73,7 @@ export async function injectPuppetContext (page: Page, contextConfig: PuppetCont
       };
     `
   })
+  await page.exposeFunction("setPuppetOfflineMode", (offlineMode: boolean) => page.setOfflineMode(offlineMode))
 }
 
 export function subscribeToMagicLogs (page: Page, subscriber: (type: string, args: any[]) => void) {
