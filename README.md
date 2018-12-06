@@ -95,6 +95,10 @@ Causes the script to end. The `puppet-run` process will exit with the exit code 
 
 The exit code defaults to zero.
 
+#### `puppet.setOfflineMode(takeOffline: boolean = true)`
+
+Puts the browser in offline mode and closes all active connections if called with `true` or no arguments. Call it with `false` to bring the browser back online.
+
 
 ## Test framework support
 
