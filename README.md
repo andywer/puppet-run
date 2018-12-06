@@ -4,9 +4,10 @@ Run anything JavaScript in a headless Chrome from your command line 🔥
 
 Transparently bundles your input files using the [Parcel bundler](https://parceljs.org). Why? Because [Karma](https://karma-runner.github.io) sucks.
 
-🚀&nbsp;&nbsp;Runs any script in a headless browser<br />
+🚀&nbsp;&nbsp;Runs any script in a headless Chrome<br />
 📦&nbsp;&nbsp;Zero-config transparent bundling<br />
-💡&nbsp;&nbsp;Supports TypeScript, React, Vue out of the box<br />
+⚙️&nbsp;&nbsp;Uses existing Babel, TypeScript, ... config if present<br />
+💡&nbsp;&nbsp;Supports TypeScript, JSX, Vue out of the box<br />
 🖥&nbsp;&nbsp;Pipes console output and errors to host shell<br />
 
 ## Installation
@@ -106,7 +107,7 @@ If you want to run tests in the browser using puppet-run, check out this list fi
 
 #### ✅ Mocha
 
-Works like a charm, see [`sample/mocha`](./sample/mocha) or [`sample/mocha-enzyme`](./sample/mocha-enzyme).
+Works like a charm, see [`sample/mocha`](./sample/mocha) or [`sample/mocha-enzyme`](./sample/mocha-enzyme). They use the [Mocha Plugin](https://github.com/andywer/puppet-run-plugins/tree/master/packages/puppet-run-plugin-mocha).
 
 #### ✅ Tape
 
@@ -123,7 +124,12 @@ Didn't try yet.
 
 ## Samples
 
-Have a look at the [`sample`](./sample) directory.
+Have a look at the samples in the [`sample`](./sample) directory:
+
+- [Simple Testing](./sample/basic)
+- [Simple Mocha Test](./sample/mocha)
+- [React / Enzyme Test](./sample/mocha-enzyme)
+- [Tape Test](./sample/tape)
 
 
 ## License
