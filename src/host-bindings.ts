@@ -63,8 +63,11 @@ export async function injectPuppetContext (page: Page, contextConfig: PuppetCont
       window.puppet = {
         argv: ${JSON.stringify(contextConfig.argv)},
         plugins: ${JSON.stringify(contextConfig.plugins)},
-        exit: (exitCode = 0) => {
-          console.log(${JSON.stringify(magicLogMessageMarker)}, "exit", exitCode);
+        exit (exitCode = 0) {
+          console.log(${JSON.stringify(magicLogMessageMarker)}, "exit", exitCode)
+        },
+        setOfflineMode (offline = true) {
+          return window.setPuppetOfflineMode(offline)
         }
       };
     `
