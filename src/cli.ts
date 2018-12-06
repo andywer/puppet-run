@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
+import getPort from "get-port"
 import meow from "meow"
-import createBundle from "./bundle"
+import serveBundle from "./bundle"
 import { isPluginArgument, loadPlugin, printPluginHelp } from "./plugins"
 import { spawnPuppet } from "./puppeteer"
 import { clearTemporaryFileCache, createTemporaryFileCache } from "./temporary"
@@ -50,25 +51,42 @@ async function run () {
     : [ entrypoint ]
 
   try {
-    const bundle = await createBundle(scriptPaths, temporaryCache)
-    const puppet = await spawnPuppet(bundle, { headless })
+    const port = await getPort()
+    const serverURL = `http://localhost:${port}/`
+
+    const { bundle, server } = await serveBundle(scriptPaths, temporaryCache, port)
+    const puppet = await spawnPuppet(bundle, serverURL, { headless })
     await puppet.run(scriptArgs, plugin)
 
     exitCode = await puppet.waitForExit()
     await puppet.close()
+    server.close()
+  } catch (error) {
+    if (headless) {
+      throw error
+    } else {
+      // tslint:disable-next-line:no-console
+      console.error(error)
+      await new Promise(resolve => undefined)
+    }
   } finally {
     if (process.env.KEEP_TEMP_CACHE) {
+      // tslint:disable-next-line:no-console
       console.log(`Temporary cache written to: ${temporaryCache}`)
     } else {
       clearTemporaryFileCache(temporaryCache)
     }
   }
 
-  if (exitCode > 0) console.log(`Script exited with exit code ${exitCode}.`)
+  if (exitCode > 0) {
+    // tslint:disable-next-line:no-console
+    console.log(`Script exited with exit code ${exitCode}.`)
+  }
   process.exit(exitCode)
 }
 
 run().catch(error => {
+  // tslint:disable-next-line:no-console
   console.error(error)
   process.exit(1)
 })

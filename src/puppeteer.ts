@@ -1,6 +1,9 @@
 import * as fs from "fs"
+import * as path from "path"
 import { ParcelBundle } from "parcel-bundler"
 import { launch, Page } from "puppeteer-core"
+import { URL } from "url"
+import { getSourceBundles } from "./bundle"
 import { getChromeLocation } from "./chrome-location"
 import {
   capturePuppetConsole,
@@ -11,48 +14,102 @@ import {
 import { Plugin } from "./plugins"
 import ScriptError from "./script-error"
 
+declare const window: any;
+
 export interface Puppet {
-  close (): Promise<void>,
-  run (argv: string[], plugin?: Plugin | null): Promise<void>,
-  waitForExit (): Promise<number>,
   on: Page["on"],
   once: Page["once"],
-  off: Page["off"]
+  off: Page["off"],
+  close (): Promise<void>,
+  run (argv: string[], plugin?: Plugin | null): Promise<void>,
+  waitForExit (): Promise<number>
 }
 
-async function loadBundle (page: Page, bundle: ParcelBundle): Promise<void> {
-  const childBundles = (bundle as any).childBundles as Set<ParcelBundle>
-  if (!bundle.entryAsset && childBundles.size > 0) {
-    for (const childBundle of childBundles.values()) {
-      await loadBundle(page, childBundle)
-    }
-    return
-  }
+const pendingPagePromises: Array<Promise<any>> = []
 
-  if (bundle.type !== "js") {
-    throw new Error(`Only JS bundles supported for now. Got "${bundle.type}" bundle: ${bundle.name}`)
-  }
+function trackPendingPagePromise (promise: Promise<any>) {
+  pendingPagePromises.push(promise)
+  return promise
+}
+
+async function loadBundle (page: Page, bundle: ParcelBundle, serverURL: string): Promise<void> {
   await page.addScriptTag({
-    content: fs.readFileSync(bundle.name, "utf8")
+    content: fs.readFileSync(require.resolve("sourcemapped-stacktrace/dist/sourcemapped-stacktrace.js"), "utf8")
   })
+
+  for (const sourceBundle of getSourceBundles(bundle)) {
+    if (sourceBundle.type !== "js") {
+      throw new Error(`Only JS bundles supported for now. Got "${sourceBundle.type}" bundle: ${sourceBundle.name}`)
+    }
+
+    await page.addScriptTag({
+      url: new URL(path.relative(sourceBundle.entryAsset.options.outDir, sourceBundle.name), serverURL).toString()
+    })
+  }
+}
+
+async function resolveStackTrace (page: Page, stackTrace: string) {
+  const resolvedStackTrace = await page.evaluate(stack => new Promise(resolve =>
+    window.sourceMappedStackTrace.mapStackTrace(stack, (newStack: string[]) => {
+      resolve(newStack.join("\n"))
+    })
+  ), stackTrace)
+  const replacePathInStackTrace = (matched: string, matchedPath: string) => {
+    return matched.replace(matchedPath, path.relative(process.cwd(), matchedPath))
+  }
+  return resolvedStackTrace.replace(/    at [^\(]+\((\.\.[^:]+):[0-9]/gm, replacePathInStackTrace)
+}
+
+async function resolveToScriptError (page: Page, error: Error) {
+  if (!error.stack) {
+    const endOfActualMessageIndex = error.message ? error.message.indexOf("\n    at ") : -1
+    if (endOfActualMessageIndex === -1) {
+      return new ScriptError(error)
+    } else {
+      const messageWithStack = error.message
+      const messageWithResolvedStack = [
+        error.message.substr(0, endOfActualMessageIndex),
+        await resolveStackTrace(page, messageWithStack)
+      ].join("\n")
+      error.message = error.message.substr(0, endOfActualMessageIndex)
+      return new ScriptError(error, messageWithResolvedStack)
+    }
+  }
+  if (Array.isArray(error.stack)) {
+    return new ScriptError(error, await resolveStackTrace(page, error.stack.join("\n")))
+  } else {
+    return new ScriptError(error, await resolveStackTrace(page, error.stack))
+  }
 }
 
 function createExitPromise (page: Page) {
+  let exited = false
   return new Promise<number>((resolve, reject) => {
     subscribeToMagicLogs(page, (type, args) => {
       if (type === "exit") {
+        exited = true
         resolve(args[0] as number)
       }
     })
+    // tslint:disable-next-line:no-console
+    const fail = (error: Error) => exited ? console.error(error) : reject(error)
     const handleScriptError = (error: Error) => {
-      reject(new ScriptError(error))
+      trackPendingPagePromise(resolveToScriptError(page, error))
+        .then(scriptError => fail(scriptError))
+        .catch(internalError => {
+          // tslint:disable:no-console
+          console.error("Internal error while resolving script error:")
+          console.error(internalError)
+          // tslint:enable:no-console
+          fail(error)
+        })
     }
     page.once("error", handleScriptError)
     page.once("pageerror", handleScriptError)
   })
 }
 
-export async function spawnPuppet (bundle: ParcelBundle, options: { headless?: boolean }): Promise<Puppet> {
+export async function spawnPuppet (bundle: ParcelBundle, serverURL: string, options: { headless?: boolean }): Promise<Puppet> {
   const { headless = true } = options
 
   const browser = await launch({
@@ -60,7 +117,7 @@ export async function spawnPuppet (bundle: ParcelBundle, options: { headless?: b
     headless
   })
 
-  const page = await browser.newPage()
+  const [ page ] = await browser.pages()
   let puppetExit: Promise<number>
 
   capturePuppetConsole(page)
@@ -68,6 +125,7 @@ export async function spawnPuppet (bundle: ParcelBundle, options: { headless?: b
   return {
     async close () {
       if (headless) {
+        await Promise.all(pendingPagePromises)
         await browser.close()
       } else {
         return new Promise<void>(resolve => undefined)
@@ -78,10 +136,10 @@ export async function spawnPuppet (bundle: ParcelBundle, options: { headless?: b
         ? await plugin.extendPuppetDotPlugins({}, argv)
         : {}
       const contextConfig = createPuppetContextConfig(argv, pluginsConfig)
-
       puppetExit = createExitPromise(page)
+
       await injectPuppetContext(page, contextConfig)
-      return loadBundle(page, bundle)
+      return loadBundle(page, bundle, serverURL)
     },
     async waitForExit () {
       return puppetExit

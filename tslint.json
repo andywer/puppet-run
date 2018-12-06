@@ -13,9 +13,12 @@
       true,
       "dev"
     ],
+    "curly": [true, "ignore-same-line"],
+    "no-object-literal-type-assertion": false,
     "no-submodule-imports": false,
     "object-literal-sort-keys": false,
     "only-arrow-functions": false,
+    "ordered-imports": false,
     "semicolon": false
   },
   "rulesDirectory": []

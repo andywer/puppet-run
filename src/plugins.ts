@@ -52,10 +52,12 @@ export function loadPlugin (entrypointArgument: string): Plugin {
 
 export function printPluginHelp (plugin: Plugin, scriptArgs: string[]) {
   if (plugin.help) {
+    // tslint:disable-next-line:no-console
     console.log(dedent(
       plugin.help(scriptArgs)
     ))
   } else {
+    // tslint:disable-next-line:no-console
     console.log(dedent(`
       ${plugin.packageName}
 
