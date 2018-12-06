@@ -10,7 +10,7 @@
     "@types/mocha": "^5.2.5",
     "chai": "^4.2.0",
     "mocha": "^5.2.0",
-    "puppet-run": "^0.2.0",
+    "puppet-run": "^0.3.0",
     "puppet-run-plugin-mocha": "^0.1.1"
   }
 }

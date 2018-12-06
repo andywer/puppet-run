@@ -6,7 +6,7 @@
     "test": "puppet-run ./test.js"
   },
   "devDependencies": {
-    "puppet-run": "^0.2.0",
+    "puppet-run": "^0.3.0",
     "tape": "^4.9.1"
   }
 }
