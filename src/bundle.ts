@@ -10,6 +10,16 @@ interface ServingBundler extends Bundler, EventEmitter {
   serve (port?: number, https?: boolean, host?: string): Promise<http.Server>
 }
 
+function copyFile (from: string, to: string) {
+  return new Promise(resolve => {
+    const input = fs.createReadStream(from)
+    const output = fs.createWriteStream(to)
+
+    input.once("end", resolve)
+    input.pipe(output)
+  })
+}
+
 export function getSourceBundles (bundle: ParcelBundle) {
   const childBundles = (bundle as any).childBundles as Set<ParcelBundle>
 
@@ -25,7 +35,7 @@ export function getSourceBundles (bundle: ParcelBundle) {
  * do not reside directly in the CWD. The source map reference URL in the code bundle will
  * always point to `/${path.basename(mapFilePath)}`.
  */
-function hackySourceMapsFix (bundle: ParcelBundle, cache: TemporaryFileCache) {
+async function hackySourceMapsFix (bundle: ParcelBundle, cache: TemporaryFileCache) {
   const sourceBundles = getSourceBundles(bundle)
 
   for (const sourceBundle of sourceBundles) {
@@ -34,7 +44,7 @@ function hackySourceMapsFix (bundle: ParcelBundle, cache: TemporaryFileCache) {
     for (const mapBundle of mapBundles) {
       const pathToFileInServerRoot = path.resolve(cache, path.basename(mapBundle.name))
       if (path.resolve(mapBundle.name) !== pathToFileInServerRoot) {
-        fs.copyFileSync(mapBundle.name, pathToFileInServerRoot)
+        await copyFile(mapBundle.name, pathToFileInServerRoot)
       }
     }
   }
