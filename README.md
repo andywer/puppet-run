@@ -10,11 +10,13 @@ Transparently bundles your input files using the [Parcel bundler](https://parcel
 💡&nbsp;&nbsp;Supports TypeScript, JSX, Vue out of the box<br />
 🖥&nbsp;&nbsp;Pipes console output and errors to host shell<br />
 
+
 ## Installation
 
 ```sh
 npm install puppet-run
 ```
+
 
 ## Usage
 
@@ -24,17 +26,40 @@ npx puppet-run ./path/to/script.js [arguments and options here will be passed to
 
 The script can basically be any JavaScript or TypeScript file. It will be bundled transparently using the [parcel bundler](https://parceljs.org). It usually works out-of-the-box with zero configuration. If you need to configure the build process, read up on how to configure `parcel`.
 
+To run Mocha tests:
+
+```sh
+npx puppet-run plugin:mocha [...mocha options] ./path/to/*.test.js
+```
+
+Print some help on how to use the tool:
+
+```sh
+npx puppet-run --help
+```
+
+Print help text how to use this plugin:
+
+```sh
+npx puppet-run plugin:mocha --help
+```
+
+
+## Example
+
 Let's see how a simple script looks like:
 
 ```js
 // cowsays.js
 import * as cowsay from "cowsay"
 
+// You can use window.*, since this will be run in Chrome
 const text = window.atob("SSBydW4gaW4gYSBicm93c2Vy")
 
 // Everything logged here will be piped to your host terminal
 console.log(cowsay.say({ text }))
 
+// Explicitly terminate the script when you are done
 puppet.exit()
 ```
 
@@ -101,6 +126,27 @@ The exit code defaults to zero.
 Puts the browser in offline mode and closes all active connections if called with `true` or no arguments. Call it with `false` to bring the browser back online.
 
 
+## More features
+
+### Environment variables
+
+You can access all environment variables of the host shell in your scripts as `process.env.*`.
+
+### Source Maps
+
+If an error is thrown, you will see the error and stack trace in your host shell. The stack trace will reference your source file lines, not the line in the bundle file that is actually served to the browser under the hood.
+
+
+## Samples
+
+Have a look at the samples in the [`sample`](./sample) directory:
+
+- [Simple Testing](./sample/basic)
+- [Simple Mocha Test](./sample/mocha)
+- [React / Enzyme Test](./sample/mocha-enzyme)
+- [Tape Test](./sample/tape)
+
+
 ## Test framework support
 
 If you want to run tests in the browser using puppet-run, check out this list first:
@@ -120,16 +166,6 @@ Currently not possible, since it's testing library and test runner code are too 
 #### ❔ Jest
 
 Didn't try yet.
-
-
-## Samples
-
-Have a look at the samples in the [`sample`](./sample) directory:
-
-- [Simple Testing](./sample/basic)
-- [Simple Mocha Test](./sample/mocha)
-- [React / Enzyme Test](./sample/mocha-enzyme)
-- [Tape Test](./sample/tape)
 
 
 ## License
