@@ -17,6 +17,15 @@ Transparently bundles your input files using the [Parcel bundler](https://parcel
 npm install puppet-run
 ```
 
+We can use npm's [npx tool](https://blog.npmjs.org/post/162869356040/introducing-npx-an-npm-package-runner) to run the locally installed puppet-run program:
+
+```sh
+npx puppet-run [<arguments>]
+
+# equal to:
+# node ./node_modules/.bin/puppet-run [<arguments>]
+```
+
 
 ## Usage
 
