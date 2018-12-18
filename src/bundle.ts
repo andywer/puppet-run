@@ -1,23 +1,13 @@
 import { EventEmitter } from "events"
-import * as fs from "fs"
 import * as http from "http"
 import * as path from "path"
 import ora from "ora"
 import Bundler, { ParcelBundle } from "parcel-bundler"
+import { copyFile } from "./fs"
 import { TemporaryFileCache } from "./temporary"
 
 interface ServingBundler extends Bundler, EventEmitter {
   serve (port?: number, https?: boolean, host?: string): Promise<http.Server>
-}
-
-function copyFile (from: string, to: string) {
-  return new Promise(resolve => {
-    const input = fs.createReadStream(from)
-    const output = fs.createWriteStream(to)
-
-    input.once("end", resolve)
-    input.pipe(output)
-  })
 }
 
 export function getSourceBundles (bundle: ParcelBundle) {

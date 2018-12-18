@@ -2,7 +2,10 @@
 
 import getPort from "get-port"
 import meow from "meow"
+import minimist from "minimist"
+import path from "path"
 import serveBundle from "./bundle"
+import { copyFiles } from "./fs"
 import { isPluginArgument, loadPlugin, printPluginHelp } from "./plugins"
 import { spawnPuppet } from "./puppeteer"
 import { clearTemporaryFileCache, createTemporaryFileCache } from "./temporary"
@@ -13,8 +16,10 @@ const cli = meow(`
     $ puppet-run plugin:<plugin> <...plugin arguments>
 
   Options
-    --help      Show this help.
-    --inspect   Run in actual Chrome window and keep it open.
+    --help                            Show this help.
+    --inspect                         Run in actual Chrome window and keep it open.
+    --p <port>, --port <port>         Serve on this port. Defaults to random port.
+    --serve <./file>[:</serve/here>]  Serve additional files next to bundle.
 
   Example
     $ puppet-run ./sample/cowsays.js
@@ -24,11 +29,30 @@ const cli = meow(`
   autoHelp: false
 })
 
-const firstArgumentIndex = process.argv.findIndex((arg, index) => index >= 2 && !arg.startsWith("-"))
+function ensureArray (arg: string | string[] | undefined): string[] {
+  if (!arg) {
+    return []
+  } else if (Array.isArray(arg)) {
+    return arg
+  } else {
+    return [arg]
+  }
+}
+
+const isParameterizedOption = (arg: string) => ["-p", "--port", "--serve"].indexOf(arg) > -1
+const firstArgumentIndex = process.argv.findIndex(
+  (arg, index) => index >= 2 && !arg.startsWith("-") && !isParameterizedOption(process.argv[index - 1])
+)
+
 const runnerOptionArgs = firstArgumentIndex > -1 ? process.argv.slice(2, firstArgumentIndex) : process.argv.slice(2)
 const scriptArgs = firstArgumentIndex > -1 ? process.argv.slice(firstArgumentIndex + 1) : []
 
-const headless = runnerOptionArgs.indexOf("--inspect") > -1 ? false : true
+const runnerOptions = minimist(runnerOptionArgs)
+
+const additionalFilesToServe = ensureArray(runnerOptions.serve).map(arg => {
+  const [sourcePath, servingPath] = arg.split(":")
+  return { sourcePath, servingPath: servingPath || path.basename(arg) }
+})
 
 if (firstArgumentIndex === -1 || runnerOptionArgs.indexOf("--help") > -1) {
   cli.showHelp()
@@ -38,6 +62,11 @@ if (firstArgumentIndex === -1 || runnerOptionArgs.indexOf("--help") > -1) {
 async function run () {
   let exitCode = 0
   const entrypoint = process.argv[firstArgumentIndex]
+
+  const headless = runnerOptionArgs.indexOf("--inspect") > -1 ? false : true
+  const port = runnerOptions.p || runnerOptions.port
+    ? parseInt(runnerOptions.p || runnerOptions.port, 10)
+    : await getPort()
 
   const plugin = isPluginArgument(entrypoint) ? loadPlugin(entrypoint) : null
   const temporaryCache = createTemporaryFileCache()
@@ -51,10 +80,10 @@ async function run () {
     : [ entrypoint ]
 
   try {
-    const port = await getPort()
     const serverURL = `http://localhost:${port}/`
 
     const { bundle, server } = await serveBundle(scriptPaths, temporaryCache, port)
+    await copyFiles(additionalFilesToServe, temporaryCache)
     const puppet = await spawnPuppet(bundle, serverURL, { headless })
     await puppet.run(scriptArgs, plugin)
 
