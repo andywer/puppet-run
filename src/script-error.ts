@@ -1,9 +1,9 @@
 // tslint:disable-next-line
-interface ScriptError extends Error {}
+interface ScriptError extends Error { }
 
 // tslint:disable-next-line:no-shadowed-variable
-const ScriptError = function ScriptError (this: ScriptError, error: Error, stack?: string) {
-  Error.call(this, error)
+const ScriptError = function ScriptError(this: ScriptError, error: Error, stack?: string) {
+  Error.call(this, <any>error)
   Object.defineProperty(this, "message", {
     enumerable: false,
     value: error.message
@@ -12,7 +12,7 @@ const ScriptError = function ScriptError (this: ScriptError, error: Error, stack
     enumerable: false,
     value: stack || error.stack
   })
-} as any as { new (error: Error, stack?: string): ScriptError }
+} as any as { new(error: Error, stack?: string): ScriptError }
 
 ScriptError.prototype = new Error()
 ScriptError.prototype.name = "ScriptError"
