@@ -121,7 +121,7 @@ export async function spawnPuppet(bundle: ParcelBundle, serverURL: string, optio
   const [ page ] = await browser.pages()
 
   // Navigate to a secure origin first. See <https://github.com/GoogleChrome/puppeteer/issues/2301>
-  await page.goto("file:///")
+  await page.goto(serverURL + "index.html")
 
   capturePuppetConsole(page)
 

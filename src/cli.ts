@@ -8,7 +8,7 @@ import serveBundle from "./bundle"
 import { copyFiles } from "./fs"
 import { isPluginArgument, loadPlugin, printPluginHelp } from "./plugins"
 import { spawnPuppet } from "./puppeteer"
-import { clearTemporaryFileCache, createTemporaryFileCache } from "./temporary"
+import { clearTemporaryFileCache, createTemporaryFileCache, writeBlankHtmlPage } from "./temporary"
 
 const cli = meow(`
   Usage
@@ -81,6 +81,7 @@ async function run () {
 
   try {
     const serverURL = `http://localhost:${port}/`
+    writeBlankHtmlPage(path.join(temporaryCache, "index.html"))
 
     const { bundle, server } = await serveBundle(scriptPaths, temporaryCache, port)
     await copyFiles(additionalFilesToServe, temporaryCache)
