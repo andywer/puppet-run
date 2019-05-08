@@ -7,6 +7,7 @@
   "repository": "github:andywer/puppet-run",
   "bin": "./dist/cli.js",
   "scripts": {
+    "prebuild": "rimraf dist/",
     "build": "tsc",
     "test": "tslint --project .",
     "prepare": "npm run build"
