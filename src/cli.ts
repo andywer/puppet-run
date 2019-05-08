@@ -8,7 +8,7 @@ import serveBundle from "./bundle"
 import { copyFiles } from "./fs"
 import { isPluginArgument, loadPlugin, printPluginHelp } from "./plugins"
 import { spawnPuppet } from "./puppeteer"
-import { clearTemporaryFileCache, createTemporaryFileCache } from "./temporary"
+import { clearTemporaryFileCache, createTemporaryFileCache, writeBlankHtmlPage } from "./temporary"
 
 const cli = meow(`
   Usage
@@ -18,7 +18,6 @@ const cli = meow(`
   Options
     --help                            Show this help.
     --inspect                         Run in actual Chrome window and keep it open.
-    --secure-origin                   Give the Chrome page a secure origin
     --p <port>, --port <port>         Serve on this port. Defaults to random port.
     --serve <./file>[:</serve/here>]  Serve additional files next to bundle.
 
@@ -65,7 +64,6 @@ async function run () {
   const entrypoint = process.argv[firstArgumentIndex]
 
   const headless = runnerOptionArgs.indexOf("--inspect") > -1 ? false : true
-  const secureOrigin = runnerOptionArgs.indexOf("--secure-origin") > -1
   const port = runnerOptions.p || runnerOptions.port
     ? parseInt(runnerOptions.p || runnerOptions.port, 10)
     : await getPort()
@@ -83,10 +81,11 @@ async function run () {
 
   try {
     const serverURL = `http://localhost:${port}/`
+    writeBlankHtmlPage(path.join(temporaryCache, "index.html"))
 
     const { bundle, server } = await serveBundle(scriptPaths, temporaryCache, port)
     await copyFiles(additionalFilesToServe, temporaryCache)
-    const puppet = await spawnPuppet(bundle, serverURL, { headless, secureOrigin })
+    const puppet = await spawnPuppet(bundle, serverURL, { headless })
     await puppet.run(scriptArgs, plugin)
 
     exitCode = await puppet.waitForExit()

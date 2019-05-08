@@ -3,7 +3,7 @@ interface ScriptError extends Error { }
 
 // tslint:disable-next-line:no-shadowed-variable
 const ScriptError = function ScriptError(this: ScriptError, error: Error, stack?: string) {
-  Error.call(this, <any>error)
+  Error.call(this, error as any)
   Object.defineProperty(this, "message", {
     enumerable: false,
     value: error.message

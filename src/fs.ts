@@ -17,7 +17,7 @@ export function copyFile (from: string, to: string) {
   })
 }
 
-export async function copyFiles (filesToServe: Array<FileToServe>, destinationDirectory: string) {
+export async function copyFiles (filesToServe: FileToServe[], destinationDirectory: string) {
   return Promise.all(filesToServe.map(
     async ({ servingPath, sourcePath }) => {
       const destinationFilePath = path.resolve(destinationDirectory, servingPath.replace(/^\//, ""))

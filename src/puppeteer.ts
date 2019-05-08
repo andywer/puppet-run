@@ -109,7 +109,8 @@ function createExitPromise (page: Page) {
   })
 }
 
-export async function spawnPuppet(bundle: ParcelBundle, serverURL: string, options: { headless?: boolean, secureOrigin?: boolean }): Promise<Puppet> {
+export async function spawnPuppet(bundle: ParcelBundle, serverURL: string, options: { headless?: boolean }): Promise<Puppet> {
+  let puppetExit: Promise<number>
   const { headless = true } = options
 
   const browser = await launch({
@@ -119,12 +120,8 @@ export async function spawnPuppet(bundle: ParcelBundle, serverURL: string, optio
 
   const [ page ] = await browser.pages()
 
-  if (options.secureOrigin) {
-    // https://github.com/GoogleChrome/puppeteer/issues/2301
-    await page.goto("file:///")
-  }
-
-  let puppetExit: Promise<number>
+  // Navigate to a secure origin first. See <https://github.com/GoogleChrome/puppeteer/issues/2301>
+  await page.goto(serverURL + "index.html")
 
   capturePuppetConsole(page)
 
