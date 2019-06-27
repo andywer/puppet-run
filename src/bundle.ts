@@ -2,6 +2,7 @@ import * as fs from "fs"
 import * as path from "path"
 import babelify from "babelify"
 import browserify from "browserify"
+import envify from "envify"
 import { TemporaryFileCache } from "./temporary"
 
 export async function createBundle (entryPaths: string[], cache: TemporaryFileCache) {
@@ -15,7 +16,8 @@ export async function createBundle (entryPaths: string[], cache: TemporaryFileCa
       debug: true,    // enables inline sourcemaps
       entries: entryPaths,
       extensions
-    }).transform(babelify.configure({
+    })
+    .transform(babelify.configure({
       cwd: __dirname,
       extensions,
       presets: [
@@ -25,6 +27,7 @@ export async function createBundle (entryPaths: string[], cache: TemporaryFileCa
       ],
       root: process.cwd()
     } as any))
+    .transform(envify)
     .bundle()
     .pipe(fs.createWriteStream(bundleFilePath))
 
