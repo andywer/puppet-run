@@ -16,13 +16,15 @@ export async function createBundle (entryPaths: string[], cache: TemporaryFileCa
       entries: entryPaths,
       extensions
     }).transform(babelify.configure({
+      cwd: __dirname,
       extensions,
       presets: [
         "@babel/preset-typescript",
         "@babel/preset-react",
         "@babel/preset-env"
-      ]
-    }))
+      ],
+      root: process.cwd()
+    } as any))
     .bundle()
     .pipe(fs.createWriteStream(bundleFilePath))
 
