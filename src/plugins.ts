@@ -1,15 +1,8 @@
 import dedent from "dedent"
 import * as path from "path"
+import { Entrypoint, Plugin } from "./types"
 
-export interface Plugin {
-  packageName: string,
-  extendPuppetDotPlugins?<InputConfig extends {}, OutputConfig extends InputConfig> (
-    puppetDotPlugins: InputConfig,
-    scriptArgs: string[]
-  ): Promise<OutputConfig>,
-  help? (scriptArgs: string[]): string,
-  resolveBundleEntrypoints? (scriptArgs: string[]): Promise<string[]>
-}
+export { Plugin }
 
 function validatePlugin (plugin: Plugin, packageName: string) {
   if (typeof plugin.resolveBundleEntrypoints !== "function") {
@@ -66,12 +59,12 @@ export function printPluginHelp (plugin: Plugin, scriptArgs: string[]) {
   }
 }
 
-export async function resolveEntrypoints(plugins: Plugin[], initialEntrypoints: string[]) {
-  let entrypoints: string[] = initialEntrypoints
+export async function resolveEntrypoints(plugins: Plugin[], initialEntrypoints: Entrypoint[], scriptArgs: string[]): Promise<Entrypoint[]> {
+  let entrypoints: Entrypoint[] = initialEntrypoints
 
   for (const plugin of plugins) {
     entrypoints = plugin.resolveBundleEntrypoints
-      ? await plugin.resolveBundleEntrypoints(entrypoints)
+      ? await plugin.resolveBundleEntrypoints(entrypoints, scriptArgs)
       : entrypoints
   }
 

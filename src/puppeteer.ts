@@ -102,7 +102,7 @@ function createExitPromise (page: Page) {
   })
 }
 
-export async function spawnPuppet(bundleFilePath: string, serverURL: string, options: { headless?: boolean }): Promise<Puppet> {
+export async function spawnPuppet(bundleFilePaths: string[], serverURL: string, options: { headless?: boolean }): Promise<Puppet> {
   let puppetExit: Promise<number>
   const { headless = true } = options
 
@@ -134,7 +134,11 @@ export async function spawnPuppet(bundleFilePath: string, serverURL: string, opt
       puppetExit = createExitPromise(page)
 
       await injectPuppetContext(page, contextConfig)
-      return loadBundle(page, bundleFilePath, serverURL)
+
+      // Load bundles sequentially
+      for (const bundlePath of bundleFilePaths) {
+        await loadBundle(page, bundlePath, serverURL)
+      }
     },
     async waitForExit () {
       return puppetExit

@@ -3,18 +3,24 @@ import * as path from "path"
 import babelify from "babelify"
 import browserify from "browserify"
 import envify from "envify"
+import mkdirp from "mkdirp"
+import nanoid from "nanoid"
 import { TemporaryFileCache } from "./temporary"
+import { Entrypoint } from "./types"
 
-export async function createBundle (entryPaths: string[], cache: TemporaryFileCache) {
+export async function createBundle (entry: Entrypoint, cache: TemporaryFileCache): Promise<Entrypoint> {
   // TODO: Use persistent cache
 
-  const bundleFilePath = path.join(cache, "main.js")
+  const servePath = (entry.servePath || `${path.basename(entry.sourcePath)}-${nanoid(6)}`).replace(/\.(jsx?|tsx?)/i, ".js")
+  const bundleFilePath = path.join(cache, servePath)
   const extensions = ["", ".js", ".jsx", ".ts", ".tsx", ".json"]
+
+  mkdirp.sync(path.dirname(bundleFilePath))
 
   await new Promise(resolve => {
     const stream = browserify({
       debug: true,    // enables inline sourcemaps
-      entries: entryPaths,
+      entries: [entry.sourcePath],
       extensions
     })
     .transform(babelify.configure({
@@ -34,5 +40,8 @@ export async function createBundle (entryPaths: string[], cache: TemporaryFileCa
     stream.on("finish", resolve)
   })
 
-  return "main.js"
+  return {
+    servePath,
+    sourcePath: bundleFilePath
+  }
 }

@@ -3,6 +3,7 @@
 import getPort from "get-port"
 import meow from "meow"
 import minimist from "minimist"
+import nanoid from "nanoid"
 import ora from "ora"
 import path from "path"
 import { createBundle } from "./bundle"
@@ -11,6 +12,7 @@ import { loadPlugin, printPluginHelp, resolveEntrypoints } from "./plugins"
 import { spawnPuppet } from "./puppeteer"
 import { serveDirectory } from "./server"
 import { clearTemporaryFileCache, createTemporaryFileCache, writeBlankHtmlPage } from "./temporary"
+import { Entrypoint } from "./types"
 
 const cli = meow(`
   Usage
@@ -21,6 +23,7 @@ const cli = meow(`
   Options
     --help                            Show this help.
     --inspect                         Run in actual Chrome window and keep it open.
+    --bundle <./file>[:</serve/here>] Bundle and serve additional files, but don't inject them.
     --p <port>, --port <port>         Serve on this port. Defaults to random port.
     --plugin <plugin>                 Load and apply plugin <plugin>.
     --serve <./file>[:</serve/here>]  Serve additional files next to bundle.
@@ -43,6 +46,14 @@ function ensureArray (arg: string | string[] | undefined): string[] {
   }
 }
 
+function parseEntrypointArg (arg: string): Entrypoint {
+  const [sourcePath, servePath] = arg.split(":")
+  return {
+    servePath,
+    sourcePath
+  }
+}
+
 async function withSpinner<T>(promise: Promise<T>): Promise<T> {
   const spinner = ora("Bundling code").start()
 
@@ -62,10 +73,8 @@ const scriptArgs = argsSeparatorIndex > -1 ? process.argv.slice(argsSeparatorInd
 
 const runnerOptions = minimist(runnerOptionArgs)
 
-const additionalFilesToServe = ensureArray(runnerOptions.serve).map(arg => {
-  const [sourcePath, servingPath] = arg.split(":")
-  return { sourcePath, servingPath: servingPath || path.basename(arg) }
-})
+const additionalBundleEntries = ensureArray(runnerOptions.bundle).map(parseEntrypointArg)
+const additionalFilesToServe = ensureArray(runnerOptions.serve).map(parseEntrypointArg)
 
 const pluginNames = Array.isArray(runnerOptions.plugin || [])
   ? runnerOptions.plugin || []
@@ -89,8 +98,8 @@ async function run () {
     ? parseInt(runnerOptions.p || runnerOptions.port, 10)
     : await getPort()
 
-  const entrypoints = runnerOptionArgs.filter(arg => arg.charAt(0) !== "-")
-  const scriptPaths = await resolveEntrypoints(plugins, entrypoints)
+  const entrypointArgs = runnerOptionArgs.filter(arg => arg.charAt(0) !== "-")
+  const entrypoints = await resolveEntrypoints(plugins, entrypointArgs.map(parseEntrypointArg), scriptArgs)
 
   const temporaryCache = createTemporaryFileCache()
 
@@ -98,10 +107,19 @@ async function run () {
     const serverURL = `http://localhost:${port}/`
     writeBlankHtmlPage(path.join(temporaryCache, "index.html"))
 
-    const bundle = await withSpinner(createBundle(scriptPaths, temporaryCache))
-    await copyFiles(additionalFilesToServe, temporaryCache)
+    const allBundles = await withSpinner(
+      Promise.all([...entrypoints, ...additionalBundleEntries].map(entrypoint => {
+        return createBundle(entrypoint, temporaryCache)
+      }))
+    )
+
+    const startupBundles = allBundles.slice(0, entrypoints.length)
+    const lazyBundles = allBundles.slice(entrypoints.length)
+
+    await copyFiles([...additionalFilesToServe, ...lazyBundles], temporaryCache)
+
     const closeServer = await serveDirectory(temporaryCache, port)
-    const puppet = await spawnPuppet(bundle, serverURL, { headless })
+    const puppet = await spawnPuppet(startupBundles.map(entry => entry.servePath!), serverURL, { headless })
     await puppet.run(scriptArgs, plugins)
 
     exitCode = await puppet.waitForExit()
