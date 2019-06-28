@@ -24,8 +24,21 @@ export async function copyFiles (filesToServe: FileToServe[], destinationDirecto
       if (destinationFilePath.substr(0, destinationDirectory.length) !== destinationDirectory) {
         throw new Error(`File would be served outside of destination directory: ${sourcePath} => ${servingPath}`)
       }
+
       mkdirp.sync(path.dirname(destinationFilePath))
-      return copyFile(sourcePath, destinationFilePath)
+
+      if (fs.statSync(sourcePath).isDirectory()) {
+        const directoryFiles = fs.readdirSync(sourcePath)
+        await copyFiles(
+          directoryFiles.map(file => ({
+            servingPath: path.join(servingPath, file),
+            sourcePath: path.join(sourcePath, file)
+          })),
+          destinationDirectory
+        )
+      } else {
+        await copyFile(sourcePath, destinationFilePath)
+      }
     }
   ))
 }
