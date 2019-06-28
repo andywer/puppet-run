@@ -6,6 +6,7 @@ import { URL } from "url"
 import { getSourceBundles } from "./bundle"
 import { getChromeLocation } from "./chrome-location"
 import {
+  captureFailedRequests,
   capturePuppetConsole,
   createPuppetContextConfig,
   injectPuppetContext,
@@ -124,6 +125,7 @@ export async function spawnPuppet(bundle: ParcelBundle, serverURL: string, optio
   await page.goto(serverURL + "index.html")
 
   capturePuppetConsole(page)
+  captureFailedRequests(page)
 
   return {
     async close () {

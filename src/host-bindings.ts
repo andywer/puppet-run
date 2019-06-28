@@ -1,4 +1,5 @@
 // tslint:disable:no-console
+import chalk from "chalk"
 import { ConsoleMessage, Page } from "puppeteer-core"
 
 export interface PuppetContextConfig<PluginsConfig extends {} = any> {
@@ -47,6 +48,20 @@ export function capturePuppetConsole (page: Page) {
       console.group(...consoleArgs)
     } else {
       console.log(...consoleArgs)
+    }
+  })
+}
+
+export function captureFailedRequests(page: Page) {
+  page.on("requestfailed", request => {
+    const failure = request.failure()
+    console.error(chalk.redBright(`Request failed: ${request.method()} ${request.url()}`))
+    console.error(chalk.gray(`  ${failure ? failure.errorText : "Unknown error"}`))
+  })
+  page.on("requestfinished", request => {
+    const response = request.response()
+    if (response && response.status() >= 400) {
+      console.error(chalk.redBright(`HTTP ${response.status()} ${request.method()} ${request.url()}`))
     }
   })
 }
