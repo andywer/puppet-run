@@ -3,11 +3,10 @@
 import getPort from "get-port"
 import meow from "meow"
 import minimist from "minimist"
-import nanoid from "nanoid"
 import ora from "ora"
 import path from "path"
 import { createBundle } from "./bundle"
-import { copyFiles } from "./fs"
+import { copyFiles, dedupeSourceFiles, resolveDirectoryEntrypoints } from "./fs"
 import { loadPlugin, printPluginHelp, resolveEntrypoints } from "./plugins"
 import { spawnPuppet } from "./puppeteer"
 import { serveDirectory } from "./server"
@@ -73,9 +72,6 @@ const scriptArgs = argsSeparatorIndex > -1 ? process.argv.slice(argsSeparatorInd
 
 const runnerOptions = minimist(runnerOptionArgs)
 
-const additionalBundleEntries = ensureArray(runnerOptions.bundle).map(parseEntrypointArg)
-const additionalFilesToServe = ensureArray(runnerOptions.serve).map(parseEntrypointArg)
-
 const pluginNames = Array.isArray(runnerOptions.plugin || [])
   ? runnerOptions.plugin || []
   : [runnerOptions.plugin]
@@ -90,13 +86,19 @@ if (runnerOptionArgs.indexOf("--help") > -1 && plugins.length > 0) {
   process.exit(0)
 }
 
-async function run () {
+async function run() {
   let exitCode = 0
 
   const headless = runnerOptionArgs.indexOf("--inspect") > -1 ? false : true
   const port = runnerOptions.p || runnerOptions.port
     ? parseInt(runnerOptions.p || runnerOptions.port, 10)
     : await getPort()
+
+  const additionalBundleEntries = await resolveDirectoryEntrypoints(
+    ensureArray(runnerOptions.bundle).map(parseEntrypointArg),
+    filenames => dedupeSourceFiles(filenames, true)
+  )
+  const additionalFilesToServe = await resolveDirectoryEntrypoints(ensureArray(runnerOptions.serve).map(parseEntrypointArg))
 
   const entrypointArgs = runnerOptionArgs.filter(arg => arg.charAt(0) !== "-")
   const entrypoints = await resolveEntrypoints(plugins, entrypointArgs.map(parseEntrypointArg), scriptArgs)
