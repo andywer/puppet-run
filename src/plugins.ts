@@ -66,6 +66,26 @@ export function printPluginHelp (plugin: Plugin, scriptArgs: string[]) {
   }
 }
 
-export function isPluginArgument (entrypointArgument: string): boolean {
-  return entrypointArgument.startsWith("plugin:")
+export async function resolveEntrypoints(plugins: Plugin[], initialEntrypoints: string[]) {
+  let entrypoints: string[] = initialEntrypoints
+
+  for (const plugin of plugins) {
+    entrypoints = plugin.resolveBundleEntrypoints
+      ? await plugin.resolveBundleEntrypoints(entrypoints)
+      : entrypoints
+  }
+
+  return entrypoints
+}
+
+export async function createRuntimeConfig(plugins: Plugin[], scriptArgs: string[]) {
+  let config: any = {}
+
+  for (const plugin of plugins) {
+    config = plugin.extendPuppetDotPlugins
+      ? await plugin.extendPuppetDotPlugins(config, scriptArgs)
+      : config
+  }
+
+  return config
 }
