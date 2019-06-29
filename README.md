@@ -9,7 +9,7 @@ How does it relate to [Karma](https://karma-runner.github.io)? It's everything t
 🚀&nbsp;&nbsp;Runs any script in a headless Chrome<br />
 📦&nbsp;&nbsp;Zero-config transparent bundling<br />
 ⚙️&nbsp;&nbsp;Uses existing Babel, TypeScript, ... config if present<br />
-💡&nbsp;&nbsp;Supports TypeScript, JSX, Vue out of the box<br />
+💡&nbsp;&nbsp;Supports TypeScript, ES modules &amp; JSX out of the box<br />
 🖥&nbsp;&nbsp;Pipes console output and errors to host shell<br />
 
 
@@ -31,19 +31,24 @@ npx puppet-run [<arguments>]
 
 ## Usage
 
+### Basics
+
 ```sh
 npx puppet-run ./path/to/script.js [arguments and options here will be passed to the script]
 ```
 
-The script can basically be any JavaScript or TypeScript file. It will be bundled transparently using the [parcel bundler](https://parceljs.org). It usually works out-of-the-box with zero configuration. If you need to configure the build process, read up on how to configure `parcel`.
+The script can be any JavaScript or TypeScript file. It will be transparently transpiled via Babel using `@babel/preset-env`, `@babel/preset-react` & `@babel/preset-typescript` and bundled using `browserify`. It usually works out-of-the-box with zero configuration.
 
-To run Mocha tests:
+You just need to call `puppet.exit()` or optionally `puppet.exit(statusCode: number)` when the script is done, so `puppet-run` knows that the script is finished. The `puppet` object is a global, injected by `puppet-run`.
+
+### Run mocha tests
 
 ```sh
+npm install puppet-run-plugin-mocha
 npx puppet-run --plugin=mocha [...mocha options] ./path/to/*.test.js
 ```
 
-Print some help on how to use the tool:
+### Print help texts
 
 ```sh
 npx puppet-run --help
@@ -58,41 +63,38 @@ npx puppet-run --plugin=mocha --help
 
 ## Example
 
-Let's see how a simple script looks like:
+This is how a simple script might look like:
 
 ```js
-// cowsays.js
-import * as cowsay from "cowsay"
+import { detect } from "detect-browser"
+
+const browser = detect()
 
 // You can use window.*, since this will be run in Chrome
 const text = window.atob("SSBydW4gaW4gYSBicm93c2Vy")
 
 // Everything logged here will be piped to your host terminal
-console.log(cowsay.say({ text }))
+console.log(text)
+console.log(`I am being run in a ${browser.name} ${browser.version}`)
 
 // Explicitly terminate the script when you are done
 puppet.exit()
 ```
 
-Recognize the final `puppet.exit()`? You have to explicitly tell puppet-run when the script is done doing its thing.
+Recognize the final `puppet.exit()`? You need to tell `puppet-run` when the script has finished.
 
 Have a look at the section "Scripting API" below to learn more about that globally available `puppet` object.
 
-Let's have some fun and see our sample script run in all its glory!
+Let's run the sample script!
 
 ```sh
-npx puppet-run ./cowsays.js
+npm install detect-browser puppet-run
+npx puppet-run ./sample.js
 ```
 
 ```
- _________________________
-< I live in a browser now >
- -------------------------
-        \   ^__^
-         \  (oo)\_______
-            (__)\       )\/\
-                ||----w |
-                ||     ||
+I live in a browser now
+I am being run in a chrome 75.0
 ```
 
 Have fun!
@@ -100,23 +102,9 @@ Have fun!
 
 ## Plugins
 
-Plugins make it easy to integrate your script with testing frameworks or other external functionality. Check out the [plugins repository](https://github.com/andywer/puppet-run-plugins).
+Plugins make it easy to integrate your script with testing frameworks or other extra functionality.
 
-Here is how to use the mocha plugin:
-
-```sh
-npm install puppet-run-plugin-mocha
-npx puppet-run --plugin=mocha ./*.test.js [--reporter "spec"]
-```
-
-This way you can just pass an arbitrary usual mocha test file without having to care about `puppet.exit()` or any boilerplate code.
-
-You can also get help how to use a plugin:
-
-```sh
-npx puppet-run --plugin=mocha --help
-```
-
+Check out the 👉 [plugins repository](https://github.com/andywer/puppet-run-plugins).
 
 ## Scripting API
 
