@@ -40,7 +40,7 @@ The script can basically be any JavaScript or TypeScript file. It will be bundle
 To run Mocha tests:
 
 ```sh
-npx puppet-run plugin:mocha [...mocha options] ./path/to/*.test.js
+npx puppet-run --plugin=mocha [...mocha options] ./path/to/*.test.js
 ```
 
 Print some help on how to use the tool:
@@ -52,7 +52,7 @@ npx puppet-run --help
 Print help text how to use this plugin:
 
 ```sh
-npx puppet-run plugin:mocha --help
+npx puppet-run --plugin=mocha --help
 ```
 
 
@@ -106,7 +106,7 @@ Here is how to use the mocha plugin:
 
 ```sh
 npm install puppet-run-plugin-mocha
-npx puppet-run plugin:mocha ./*.test.js [--reporter "spec"]
+npx puppet-run --plugin=mocha ./*.test.js [--reporter "spec"]
 ```
 
 This way you can just pass an arbitrary usual mocha test file without having to care about `puppet.exit()` or any boilerplate code.
@@ -114,7 +114,7 @@ This way you can just pass an arbitrary usual mocha test file without having to 
 You can also get help how to use a plugin:
 
 ```sh
-npx puppet-run plugin:mocha --help
+npx puppet-run --plugin=mocha --help
 ```
 
 

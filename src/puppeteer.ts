@@ -10,7 +10,7 @@ import {
   injectPuppetContext,
   subscribeToMagicLogs
 } from "./host-bindings"
-import { Plugin } from "./plugins"
+import { createRuntimeConfig, Plugin } from "./plugins"
 import ScriptError from "./script-error"
 
 declare const window: any;
@@ -20,7 +20,7 @@ export interface Puppet {
   once: Page["once"],
   off: Page["off"],
   close (): Promise<void>,
-  run (argv: string[], plugin?: Plugin | null): Promise<void>,
+  run (argv: string[], plugins?: Plugin[]): Promise<void>,
   waitForExit (): Promise<number>
 }
 
@@ -102,7 +102,7 @@ function createExitPromise (page: Page) {
   })
 }
 
-export async function spawnPuppet(bundleFilePath: string, serverURL: string, options: { headless?: boolean }): Promise<Puppet> {
+export async function spawnPuppet(bundleFilePaths: string[], serverURL: string, options: { headless?: boolean }): Promise<Puppet> {
   let puppetExit: Promise<number>
   const { headless = true } = options
 
@@ -128,15 +128,17 @@ export async function spawnPuppet(bundleFilePath: string, serverURL: string, opt
         return new Promise<void>(resolve => undefined)
       }
     },
-    async run (argv: string[], plugin: Plugin | null = null) {
-      const pluginsConfig = plugin && plugin.extendPuppetDotPlugins
-        ? await plugin.extendPuppetDotPlugins({}, argv)
-        : {}
+    async run (argv: string[], plugins: Plugin[] = []) {
+      const pluginsConfig = await createRuntimeConfig(plugins, argv)
       const contextConfig = createPuppetContextConfig(argv, pluginsConfig)
       puppetExit = createExitPromise(page)
 
       await injectPuppetContext(page, contextConfig)
-      return loadBundle(page, bundleFilePath, serverURL)
+
+      // Load bundles sequentially
+      for (const bundlePath of bundleFilePaths) {
+        await loadBundle(page, bundlePath, serverURL)
+      }
     },
     async waitForExit () {
       return puppetExit
