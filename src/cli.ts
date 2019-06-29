@@ -3,11 +3,14 @@
 import getPort from "get-port"
 import meow from "meow"
 import minimist from "minimist"
+import ora from "ora"
 import path from "path"
-import serveBundle from "./bundle"
+import * as Stream from "stream"
+import { createBundle } from "./bundle"
 import { copyFiles } from "./fs"
 import { isPluginArgument, loadPlugin, printPluginHelp } from "./plugins"
 import { spawnPuppet } from "./puppeteer"
+import { serveDirectory } from "./server"
 import { clearTemporaryFileCache, createTemporaryFileCache, writeBlankHtmlPage } from "./temporary"
 
 const cli = meow(`
@@ -36,6 +39,19 @@ function ensureArray (arg: string | string[] | undefined): string[] {
     return arg
   } else {
     return [arg]
+  }
+}
+
+async function withSpinner<T>(promise: Promise<T>): Promise<T> {
+  const spinner = ora("Bundling code").start()
+
+  try {
+    const result = await promise
+    spinner.succeed("Bundling done.")
+    return result
+  } catch (error) {
+    spinner.fail("Bundling failed.")
+    throw error // re-throw
   }
 }
 
@@ -83,21 +99,22 @@ async function run () {
     const serverURL = `http://localhost:${port}/`
     writeBlankHtmlPage(path.join(temporaryCache, "index.html"))
 
-    const { bundle, server } = await serveBundle(scriptPaths, temporaryCache, port)
+    const bundle = await withSpinner(createBundle(scriptPaths, temporaryCache))
     await copyFiles(additionalFilesToServe, temporaryCache)
+    const closeServer = await serveDirectory(temporaryCache, port)
     const puppet = await spawnPuppet(bundle, serverURL, { headless })
     await puppet.run(scriptArgs, plugin)
 
     exitCode = await puppet.waitForExit()
     await puppet.close()
-    server.close()
+    closeServer()
   } catch (error) {
     if (headless) {
       throw error
     } else {
       // tslint:disable-next-line:no-console
       console.error(error)
-      await new Promise(resolve => undefined)
+      await new Promise(resolve => process.on("SIGINT", resolve))
     }
   } finally {
     if (process.env.KEEP_TEMP_CACHE) {

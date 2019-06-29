@@ -1,8 +1,10 @@
 # 🤖 puppet-run
 
-Run anything JavaScript in a headless Chrome from your command line 🔥
+Run anything JavaScript in Chrome with puppeteer and pipe it's output back to your terminal 🔥
 
-Transparently bundles your input files using the [Parcel bundler](https://parceljs.org). Why? Because [Karma](https://karma-runner.github.io) sucks.
+Transparently bundles your input files and runs them in a headless Chromium browser.  Great for running tests in an actual browser!
+
+How does it relate to [Karma](https://karma-runner.github.io)? It's everything that Karma is not: It's small, it's fast and trivial to set up.
 
 🚀&nbsp;&nbsp;Runs any script in a headless Chrome<br />
 📦&nbsp;&nbsp;Zero-config transparent bundling<br />
