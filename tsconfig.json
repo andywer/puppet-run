@@ -3,15 +3,15 @@
     "allowSyntheticDefaultImports": true,
     "downlevelIteration": true,
     "esModuleInterop": true,
-    "skipLibCheck": true,
     "target": "es5",
     "module": "commonjs",
-    "lib": ["es2015"],
+    "lib": ["dom", "es2015"],
     "outDir": "dist",
     "declaration": true,
     "strict": true
   },
   "include": [
-    "./src/cli.ts"
+    "./src/cli.ts",
+    "./types/*.d.ts"
   ]
 }

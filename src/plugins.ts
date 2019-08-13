@@ -1,15 +1,8 @@
 import dedent from "dedent"
 import * as path from "path"
+import { Entrypoint, Plugin } from "./types"
 
-export interface Plugin {
-  packageName: string,
-  extendPuppetDotPlugins?<InputConfig extends {}, OutputConfig extends InputConfig> (
-    puppetDotPlugins: InputConfig,
-    scriptArgs: string[]
-  ): Promise<OutputConfig>,
-  help? (scriptArgs: string[]): string,
-  resolveBundleEntrypoints? (scriptArgs: string[]): Promise<string[]>
-}
+export { Plugin }
 
 function validatePlugin (plugin: Plugin, packageName: string) {
   if (typeof plugin.resolveBundleEntrypoints !== "function") {
@@ -66,6 +59,26 @@ export function printPluginHelp (plugin: Plugin, scriptArgs: string[]) {
   }
 }
 
-export function isPluginArgument (entrypointArgument: string): boolean {
-  return entrypointArgument.startsWith("plugin:")
+export async function resolveEntrypoints(plugins: Plugin[], initialEntrypoints: Entrypoint[], scriptArgs: string[]): Promise<Entrypoint[]> {
+  let entrypoints: Entrypoint[] = initialEntrypoints
+
+  for (const plugin of plugins) {
+    entrypoints = plugin.resolveBundleEntrypoints
+      ? await plugin.resolveBundleEntrypoints(entrypoints, scriptArgs)
+      : entrypoints
+  }
+
+  return entrypoints
+}
+
+export async function createRuntimeConfig(plugins: Plugin[], scriptArgs: string[]) {
+  let config: any = {}
+
+  for (const plugin of plugins) {
+    config = plugin.extendPuppetDotPlugins
+      ? await plugin.extendPuppetDotPlugins(config, scriptArgs)
+      : config
+  }
+
+  return config
 }

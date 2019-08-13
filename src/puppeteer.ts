@@ -1,9 +1,7 @@
 import * as fs from "fs"
 import * as path from "path"
-import { ParcelBundle } from "parcel-bundler"
 import { launch, Page } from "puppeteer-core"
 import { URL } from "url"
-import { getSourceBundles } from "./bundle"
 import { getChromeLocation } from "./chrome-location"
 import {
   captureFailedRequests,
@@ -12,7 +10,7 @@ import {
   injectPuppetContext,
   subscribeToMagicLogs
 } from "./host-bindings"
-import { Plugin } from "./plugins"
+import { createRuntimeConfig, Plugin } from "./plugins"
 import ScriptError from "./script-error"
 
 declare const window: any;
@@ -22,7 +20,7 @@ export interface Puppet {
   once: Page["once"],
   off: Page["off"],
   close (): Promise<void>,
-  run (argv: string[], plugin?: Plugin | null): Promise<void>,
+  run (argv: string[], plugins?: Plugin[]): Promise<void>,
   waitForExit (): Promise<number>
 }
 
@@ -33,20 +31,14 @@ function trackPendingPagePromise (promise: Promise<any>) {
   return promise
 }
 
-async function loadBundle (page: Page, bundle: ParcelBundle, serverURL: string): Promise<void> {
+async function loadBundle (page: Page, bundleFilePath: string, serverURL: string): Promise<void> {
   await page.addScriptTag({
     content: fs.readFileSync(require.resolve("sourcemapped-stacktrace/dist/sourcemapped-stacktrace.js"), "utf8")
   })
 
-  for (const sourceBundle of getSourceBundles(bundle)) {
-    if (sourceBundle.type !== "js") {
-      throw new Error(`Only JS bundles supported for now. Got "${sourceBundle.type}" bundle: ${sourceBundle.name}`)
-    }
-
-    await page.addScriptTag({
-      url: new URL(path.relative(sourceBundle.entryAsset.options.outDir, sourceBundle.name), serverURL).toString()
-    })
-  }
+  await page.addScriptTag({
+    url: new URL(bundleFilePath, serverURL).toString()
+  })
 }
 
 async function resolveStackTrace (page: Page, stackTrace: string) {
@@ -110,7 +102,7 @@ function createExitPromise (page: Page) {
   })
 }
 
-export async function spawnPuppet(bundle: ParcelBundle, serverURL: string, options: { headless?: boolean }): Promise<Puppet> {
+export async function spawnPuppet(bundleFilePaths: string[], serverURL: string, options: { headless?: boolean }): Promise<Puppet> {
   let puppetExit: Promise<number>
   const { headless = true } = options
 
@@ -136,15 +128,17 @@ export async function spawnPuppet(bundle: ParcelBundle, serverURL: string, optio
         return new Promise<void>(resolve => undefined)
       }
     },
-    async run (argv: string[], plugin: Plugin | null = null) {
-      const pluginsConfig = plugin && plugin.extendPuppetDotPlugins
-        ? await plugin.extendPuppetDotPlugins({}, argv)
-        : {}
+    async run (argv: string[], plugins: Plugin[] = []) {
+      const pluginsConfig = await createRuntimeConfig(plugins, argv)
       const contextConfig = createPuppetContextConfig(argv, pluginsConfig)
       puppetExit = createExitPromise(page)
 
       await injectPuppetContext(page, contextConfig)
-      return loadBundle(page, bundle, serverURL)
+
+      // Load bundles sequentially
+      for (const bundlePath of bundleFilePaths) {
+        await loadBundle(page, bundlePath, serverURL)
+      }
     },
     async waitForExit () {
       return puppetExit

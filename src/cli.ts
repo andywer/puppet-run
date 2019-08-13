@@ -3,28 +3,34 @@
 import getPort from "get-port"
 import meow from "meow"
 import minimist from "minimist"
+import ora from "ora"
 import path from "path"
-import serveBundle from "./bundle"
-import { copyFiles } from "./fs"
-import { isPluginArgument, loadPlugin, printPluginHelp } from "./plugins"
+import { createBundle } from "./bundle"
+import { copyFiles, dedupeSourceFiles, resolveDirectoryEntrypoints } from "./fs"
+import { loadPlugin, printPluginHelp, resolveEntrypoints } from "./plugins"
 import { spawnPuppet } from "./puppeteer"
+import { serveDirectory } from "./server"
 import { clearTemporaryFileCache, createTemporaryFileCache, writeBlankHtmlPage } from "./temporary"
+import { Entrypoint } from "./types"
 
 const cli = meow(`
   Usage
-    $ puppet-run <./path/to/index.js> [...script arguments]
-    $ puppet-run plugin:<plugin> <...plugin arguments>
+    $ puppet-run <./entrypoint> [...more entrypoints] [-- <...script arguments>]
+    $ puppet-run <./entrypoint>:</serve/here> [...more entrypoints] [-- <...script args>]
+    $ puppet-run --plugin=<plugin> [<...entrypoints>] [-- <...script arguments>]
 
   Options
     --help                            Show this help.
     --inspect                         Run in actual Chrome window and keep it open.
+    --bundle <./file>[:</serve/here>] Bundle and serve additional files, but don't inject them.
     --p <port>, --port <port>         Serve on this port. Defaults to random port.
+    --plugin <plugin>                 Load and apply plugin <plugin>.
     --serve <./file>[:</serve/here>]  Serve additional files next to bundle.
 
   Example
     $ puppet-run ./sample/cowsays.js
     $ puppet-run ./sample/greet.ts newbie
-    $ puppet-run plugin:mocha ./sample/mocha-test.ts
+    $ puppet-run --plugin=mocha ./sample/mocha-test.ts
 `, {
   autoHelp: false
 })
@@ -39,65 +45,95 @@ function ensureArray (arg: string | string[] | undefined): string[] {
   }
 }
 
-const isParameterizedOption = (arg: string) => ["-p", "--port", "--serve"].indexOf(arg) > -1
-const firstArgumentIndex = process.argv.findIndex(
-  (arg, index) => index >= 2 && !arg.startsWith("-") && !isParameterizedOption(process.argv[index - 1])
-)
+function parseEntrypointArg (arg: string): Entrypoint {
+  const [sourcePath, servePath] = arg.split(":")
+  return {
+    servePath,
+    sourcePath
+  }
+}
 
-const runnerOptionArgs = firstArgumentIndex > -1 ? process.argv.slice(2, firstArgumentIndex) : process.argv.slice(2)
-const scriptArgs = firstArgumentIndex > -1 ? process.argv.slice(firstArgumentIndex + 1) : []
+async function withSpinner<T>(promise: Promise<T>): Promise<T> {
+  const spinner = ora("Bundling code").start()
+
+  try {
+    const result = await promise
+    spinner.succeed("Bundling done.")
+    return result
+  } catch (error) {
+    spinner.fail("Bundling failed.")
+    throw error // re-throw
+  }
+}
+
+const argsSeparatorIndex = process.argv.indexOf("--")
+const runnerOptionArgs = argsSeparatorIndex > -1 ? process.argv.slice(2, argsSeparatorIndex) : process.argv.slice(2)
+const scriptArgs = argsSeparatorIndex > -1 ? process.argv.slice(argsSeparatorIndex + 1) : []
 
 const runnerOptions = minimist(runnerOptionArgs)
 
-const additionalFilesToServe = ensureArray(runnerOptions.serve).map(arg => {
-  const [sourcePath, servingPath] = arg.split(":")
-  return { sourcePath, servingPath: servingPath || path.basename(arg) }
-})
+const pluginNames = Array.isArray(runnerOptions.plugin || [])
+  ? runnerOptions.plugin || []
+  : [runnerOptions.plugin]
 
-if (firstArgumentIndex === -1 || runnerOptionArgs.indexOf("--help") > -1) {
+const plugins = pluginNames.map(loadPlugin)
+
+if (runnerOptionArgs.indexOf("--help") > -1 && plugins.length > 0) {
+  printPluginHelp(plugins[0], scriptArgs)
+  process.exit(0)
+} else if (process.argv.length === 2 || runnerOptionArgs.indexOf("--help") > -1) {
   cli.showHelp()
   process.exit(0)
 }
 
-async function run () {
+async function run() {
   let exitCode = 0
-  const entrypoint = process.argv[firstArgumentIndex]
 
   const headless = runnerOptionArgs.indexOf("--inspect") > -1 ? false : true
   const port = runnerOptions.p || runnerOptions.port
     ? parseInt(runnerOptions.p || runnerOptions.port, 10)
     : await getPort()
 
-  const plugin = isPluginArgument(entrypoint) ? loadPlugin(entrypoint) : null
+  const additionalBundleEntries = await resolveDirectoryEntrypoints(
+    ensureArray(runnerOptions.bundle).map(parseEntrypointArg),
+    filenames => dedupeSourceFiles(filenames, true)
+  )
+  const additionalFilesToServe = await resolveDirectoryEntrypoints(ensureArray(runnerOptions.serve).map(parseEntrypointArg))
+
+  const entrypointArgs = runnerOptionArgs.filter(arg => arg.charAt(0) !== "-")
+  const entrypoints = await resolveEntrypoints(plugins, entrypointArgs.map(parseEntrypointArg), scriptArgs)
+
   const temporaryCache = createTemporaryFileCache()
-
-  if (plugin && scriptArgs.indexOf("--help") > -1) {
-    return printPluginHelp(plugin, scriptArgs)
-  }
-
-  const scriptPaths = plugin && plugin.resolveBundleEntrypoints
-    ? await plugin.resolveBundleEntrypoints(scriptArgs)
-    : [ entrypoint ]
 
   try {
     const serverURL = `http://localhost:${port}/`
     writeBlankHtmlPage(path.join(temporaryCache, "index.html"))
 
-    const { bundle, server } = await serveBundle(scriptPaths, temporaryCache, port)
-    await copyFiles(additionalFilesToServe, temporaryCache)
-    const puppet = await spawnPuppet(bundle, serverURL, { headless })
-    await puppet.run(scriptArgs, plugin)
+    const allBundles = await withSpinner(
+      Promise.all([...entrypoints, ...additionalBundleEntries].map(entrypoint => {
+        return createBundle(entrypoint, temporaryCache)
+      }))
+    )
+
+    const startupBundles = allBundles.slice(0, entrypoints.length)
+    const lazyBundles = allBundles.slice(entrypoints.length)
+
+    await copyFiles([...additionalFilesToServe, ...lazyBundles], temporaryCache)
+
+    const closeServer = await serveDirectory(temporaryCache, port)
+    const puppet = await spawnPuppet(startupBundles.map(entry => entry.servePath!), serverURL, { headless })
+    await puppet.run(scriptArgs, plugins)
 
     exitCode = await puppet.waitForExit()
     await puppet.close()
-    server.close()
+    closeServer()
   } catch (error) {
     if (headless) {
       throw error
     } else {
       // tslint:disable-next-line:no-console
       console.error(error)
-      await new Promise(resolve => undefined)
+      await new Promise(resolve => process.on("SIGINT", resolve))
     }
   } finally {
     if (process.env.KEEP_TEMP_CACHE) {
