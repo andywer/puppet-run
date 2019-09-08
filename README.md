@@ -4,17 +4,17 @@
   <a href="https://www.npmjs.com/package/puppet-run" target="_blank"><img alt="npm (tag)" src="https://img.shields.io/npm/v/puppet-run.svg?style=flat-square"></a>
 </p>
 
-Run any JavaScript or TypeScript code in a headless browser using puppeteer and pipe it's output back to your terminal 🔥
+Run any JavaScript / TypeScript code in a headless browser using [Puppeteer](https://github.com/GoogleChrome/puppeteer) and pipe its output to your terminal 🔥
 
 Transparently bundles input files, so you can use `require()` and ES module imports. You can even simulate connectivity issues and serve static files. Great for testing client-side code in an actual browser!
 
 How does it relate to [Karma](https://karma-runner.github.io)? It's everything that Karma is not: It's small, it's fast and trivial to set up.
 
-🚀&nbsp;&nbsp;Runs any script in a headless Chrome<br />
+🚀&nbsp;&nbsp;Runs any script in a headless Chrome browser<br />
 📦&nbsp;&nbsp;Zero-config transparent bundling<br />
-⚙️&nbsp;&nbsp;Uses existing Babel, TypeScript, ... config if present<br />
 💡&nbsp;&nbsp;Supports TypeScript, ES modules &amp; JSX out of the box<br />
 🖥&nbsp;&nbsp;Pipes console output and errors to host shell<br />
+⚙️&nbsp;&nbsp;Uses custom Babel, TypeScript, ... config if present<br />
 
 
 ## Installation
@@ -36,7 +36,7 @@ npx puppet-run [<arguments>]
 node ./node_modules/.bin/puppet-run [<arguments>]
 ```
 
-Pass any JavaScript or TypeScript file to `puppet-run` as an entrypoint. It will be transpiled by Babel using `@babel/preset-env`, `@babel/preset-react` & `@babel/preset-typescript` and bundled using `browserify`. It normally works out-of-the-box with zero configuration.
+Pass any JavaScript or TypeScript file to `puppet-run` as an entrypoint. It will be transpiled by Babel and bundled using `browserify`. It normally works out-of-the-box with zero configuration.
 
 ```sh
 npx puppet-run [...puppet-run options] ./path/to/script.js [...script options]
@@ -55,7 +55,7 @@ npx puppet-run --plugin=mocha [...mocha options] ./path/to/*.test.js
 npx puppet-run --help
 ```
 
-Print help text how to use this plugin:
+To print a plugin's help text:
 
 ```sh
 npx puppet-run --plugin=mocha --help
@@ -74,7 +74,7 @@ console.log(`I am being run in a browser: ${navigator.userAgent}`)
 puppet.exit()
 ```
 
-Don't forget to call `puppet.exit()` when the script is done, so `puppet-run` knows that the script is finished. You can also exit with a non-zero exit code using `puppet.exit(statusCode: number)`.
+Don't forget to call `puppet.exit()` when the script is done, so `puppet-run` knows that the script has finished. You can also exit with a non-zero exit code using `puppet.exit(statusCode: number)`.
 
 Check out the  "Scripting API" section below if you want to learn more about the globally available `puppet` object.
 
