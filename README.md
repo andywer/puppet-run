@@ -1,8 +1,12 @@
-# 🤖 puppet-run
+<h1 align="center">🤖&nbsp;&nbsp;puppet-run</h1>
 
-Run anything JavaScript in Chrome with puppeteer and pipe it's output back to your terminal 🔥
+<p align="center">
+  <a href="https://www.npmjs.com/package/puppet-run" target="_blank"><img alt="npm (tag)" src="https://img.shields.io/npm/v/puppet-run.svg?style=flat-square"></a>
+</p>
 
-Transparently bundles your input files and runs them in a headless Chromium browser.  Great for running tests in an actual browser!
+Run any JavaScript or TypeScript code in a headless browser using puppeteer and pipe it's output back to your terminal 🔥
+
+Transparently bundles input files, so you can use `require()` and ES module imports. You can even simulate connectivity issues and serve static files. Great for testing client-side code in an actual browser!
 
 How does it relate to [Karma](https://karma-runner.github.io)? It's everything that Karma is not: It's small, it's fast and trivial to set up.
 
@@ -19,27 +23,24 @@ How does it relate to [Karma](https://karma-runner.github.io)? It's everything t
 npm install puppet-run
 ```
 
-We can use npm's [npx tool](https://blog.npmjs.org/post/162869356040/introducing-npx-an-npm-package-runner) to run the locally installed puppet-run program:
-
-```sh
-npx puppet-run [<arguments>]
-
-# equal to:
-# node ./node_modules/.bin/puppet-run [<arguments>]
-```
-
-
 ## Usage
 
 ### Basics
 
+Running `puppet-run` from the command line is simple. We can use npm's [npx tool](https://blog.npmjs.org/post/162869356040/introducing-npx-an-npm-package-runner) for convenience.
+
 ```sh
-npx puppet-run ./path/to/script.js [arguments and options here will be passed to the script]
+npx puppet-run [<arguments>]
+
+# without npx
+node ./node_modules/.bin/puppet-run [<arguments>]
 ```
 
-The script can be any JavaScript or TypeScript file. It will be transparently transpiled via Babel using `@babel/preset-env`, `@babel/preset-react` & `@babel/preset-typescript` and bundled using `browserify`. It usually works out-of-the-box with zero configuration.
+Pass any JavaScript or TypeScript file to `puppet-run` as an entrypoint. It will be transpiled by Babel using `@babel/preset-env`, `@babel/preset-react` & `@babel/preset-typescript` and bundled using `browserify`. It normally works out-of-the-box with zero configuration.
 
-You just need to call `puppet.exit()` or optionally `puppet.exit(statusCode: number)` when the script is done, so `puppet-run` knows that the script is finished. The `puppet` object is a global, injected by `puppet-run`.
+```sh
+npx puppet-run [...puppet-run options] ./path/to/script.js [...script options]
+```
 
 ### Run mocha tests
 
@@ -63,38 +64,30 @@ npx puppet-run --plugin=mocha --help
 
 ## Example
 
-This is how a simple script might look like:
-
 ```js
-import { detect } from "detect-browser"
-
-const browser = detect()
-
-// You can use window.*, since this will be run in Chrome
-const text = window.atob("SSBydW4gaW4gYSBicm93c2Vy")
+// sample.js
 
 // Everything logged here will be piped to your host terminal
-console.log(text)
-console.log(`I am being run in a ${browser.name} ${browser.version}`)
+console.log(`I am being run in a browser: ${navigator.userAgent}`)
 
 // Explicitly terminate the script when you are done
 puppet.exit()
 ```
 
-Recognize the final `puppet.exit()`? You need to tell `puppet-run` when the script has finished.
+Don't forget to call `puppet.exit()` when the script is done, so `puppet-run` knows that the script is finished. You can also exit with a non-zero exit code using `puppet.exit(statusCode: number)`.
 
-Have a look at the section "Scripting API" below to learn more about that globally available `puppet` object.
+Check out the  "Scripting API" section below if you want to learn more about the globally available `puppet` object.
 
 Let's run the sample script!
 
 ```sh
-npm install detect-browser puppet-run
 npx puppet-run ./sample.js
 ```
 
+You should now see the output of the script on your terminal:
+
 ```
-I live in a browser now
-I am being run in a chrome 75.0
+I am being run in a browser: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36
 ```
 
 Have fun!
@@ -102,9 +95,10 @@ Have fun!
 
 ## Plugins
 
-Plugins make it easy to integrate your script with testing frameworks or other extra functionality.
+Plugins make it easy to integrate your script with testing frameworks.
 
-Check out the 👉 [plugins repository](https://github.com/andywer/puppet-run-plugins).
+Check out the 👉 [plugins repository](https://github.com/andywer/puppet-run-plugins) to see what's on offer.
+
 
 ## Scripting API
 
@@ -114,7 +108,7 @@ The script runner will inject a `puppet` object into the browser window's global
 
 Contains all the command line arguments and options passed to `puppet-run` after the script file path.
 
-#### `puppet.exit(exitCode: number = 0)`
+#### `puppet.exit(exitCode?: number = 0)`
 
 Causes the script to end. The `puppet-run` process will exit with the exit code you pass here.
 
