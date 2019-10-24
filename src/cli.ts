@@ -15,9 +15,9 @@ import { Entrypoint } from "./types"
 
 const cli = meow(`
   Usage
-    $ puppet-run <./entrypoint> [...more entrypoints] [-- <...script arguments>]
-    $ puppet-run <./entrypoint>:</serve/here> [...more entrypoints] [-- <...script args>]
-    $ puppet-run --plugin=<plugin> [<...entrypoints>] [-- <...script arguments>]
+    $ run-headless <./entrypoint> [...more entrypoints] [-- <...script arguments>]
+    $ run-headless <./entrypoint>:</serve/here> [...more entrypoints] [-- <...script args>]
+    $ run-headless --plugin=<plugin> [<...entrypoints>] [-- <...script arguments>]
 
   Options
     --help                            Show this help.
@@ -28,9 +28,9 @@ const cli = meow(`
     --serve <./file>[:</serve/here>]  Serve additional files next to bundle.
 
   Example
-    $ puppet-run ./sample/cowsays.js
-    $ puppet-run ./sample/greet.ts newbie
-    $ puppet-run --plugin=mocha ./sample/mocha-test.ts
+    $ run-headless ./sample/cowsays.js
+    $ run-headless ./sample/greet.ts newbie
+    $ run-headless --plugin=mocha ./sample/mocha-test.ts
 `, {
   autoHelp: false
 })

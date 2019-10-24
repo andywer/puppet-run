@@ -1,12 +1,12 @@
-<h1 align="center">🤖&nbsp;&nbsp;puppet-run</h1>
+<h1 align="center">🤖&nbsp;&nbsp;run-headless</h1>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/puppet-run" target="_blank"><img alt="npm (tag)" src="https://img.shields.io/npm/v/puppet-run.svg?style=flat-square"></a>
+  <a href="https://www.npmjs.com/package/run-headless" target="_blank"><img alt="npm (tag)" src="https://img.shields.io/npm/v/run-headless.svg?style=flat-square"></a>
 </p>
 
-Run any JavaScript / TypeScript code in a headless browser using [Puppeteer](https://github.com/GoogleChrome/puppeteer) and pipe its output to your terminal 🔥
+Run any JavaScript / TypeScript code in a headless browser using [Puppeteer](https://github.com/GoogleChrome/puppeteer) from your terminal 🔥
 
-Transparently bundles input files, so you can use `require()` and ES module imports. You can even simulate connectivity issues and serve static files. Great for testing client-side code in an actual browser!
+Transparently bundles input files, so you can use `require()` and ES module `import`. You can serve static files and even simulate connectivity issues. Great for testing client-side code in an actual browser!
 
 How does it relate to [Karma](https://karma-runner.github.io)? It's everything that Karma is not: It's small, it's fast and trivial to set up.
 
@@ -20,45 +20,45 @@ How does it relate to [Karma](https://karma-runner.github.io)? It's everything t
 ## Installation
 
 ```sh
-npm install puppet-run
+npm install run-headless
 ```
 
 ## Usage
 
 ### Basics
 
-Running `puppet-run` from the command line is simple. We can use npm's [npx tool](https://blog.npmjs.org/post/162869356040/introducing-npx-an-npm-package-runner) for convenience.
+Running `run-headless` from the command line is simple. We can use npm's [npx tool](https://blog.npmjs.org/post/162869356040/introducing-npx-an-npm-package-runner) for convenience.
 
 ```sh
-npx puppet-run [<arguments>]
+npx run-headless [<arguments>]
 
 # without npx
-node ./node_modules/.bin/puppet-run [<arguments>]
+node ./node_modules/.bin/run-headless [<arguments>]
 ```
 
-Pass any JavaScript or TypeScript file to `puppet-run` as an entrypoint. It will be transpiled by Babel and bundled using `browserify`. It normally works out-of-the-box with zero configuration.
+Pass any JavaScript or TypeScript file to `run-headless` as an entrypoint. It will be transpiled by Babel and bundled using `browserify`. It normally works out-of-the-box with zero configuration.
 
 ```sh
-npx puppet-run [...puppet-run options] ./path/to/script.js [...script options]
+npx run-headless [...run-headless options] ./path/to/script.js [...script options]
 ```
 
 ### Run mocha tests
 
 ```sh
-npm install puppet-run-plugin-mocha
-npx puppet-run --plugin=mocha [...mocha options] ./path/to/*.test.js
+npm install run-headless-plugin-mocha
+npx run-headless --plugin=mocha [...mocha options] ./path/to/*.test.js
 ```
 
 ### Print help texts
 
 ```sh
-npx puppet-run --help
+npx run-headless --help
 ```
 
 To print a plugin's help text:
 
 ```sh
-npx puppet-run --plugin=mocha --help
+npx run-headless --plugin=mocha --help
 ```
 
 
@@ -74,14 +74,14 @@ console.log(`I am being run in a browser: ${navigator.userAgent}`)
 puppet.exit()
 ```
 
-Don't forget to call `puppet.exit()` when the script is done, so `puppet-run` knows that the script has finished. You can also exit with a non-zero exit code using `puppet.exit(statusCode: number)`.
+Don't forget to call `puppet.exit()` when the script is done, so `run-headless` knows that the script has finished. You can also exit with a non-zero exit code using `puppet.exit(statusCode: number)`.
 
 Check out the  "Scripting API" section below if you want to learn more about the globally available `puppet` object.
 
 Let's run the sample script!
 
 ```sh
-npx puppet-run ./sample.js
+npx run-headless ./sample.js
 ```
 
 You should now see the output of the script on your terminal:
@@ -97,7 +97,7 @@ Have fun!
 
 Plugins make it easy to integrate your script with testing frameworks.
 
-Check out the 👉 [plugins repository](https://github.com/andywer/puppet-run-plugins) to see what's on offer.
+Check out the 👉 [plugins repository](https://github.com/andywer/run-headless-plugins) to see what's on offer.
 
 
 ## Scripting API
@@ -106,11 +106,11 @@ The script runner will inject a `puppet` object into the browser window's global
 
 #### `puppet.argv: string[]`
 
-Contains all the command line arguments and options passed to `puppet-run` after the script file path.
+Contains all the command line arguments and options passed to `run-headless` after the script file path.
 
 #### `puppet.exit(exitCode?: number = 0)`
 
-Causes the script to end. The `puppet-run` process will exit with the exit code you pass here.
+Causes the script to end. The `run-headless` process will exit with the exit code you pass here.
 
 The exit code defaults to zero.
 
