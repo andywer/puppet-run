@@ -4,14 +4,11 @@ import getPort from "get-port"
 import meow from "meow"
 import minimist from "minimist"
 import ora from "ora"
-import path from "path"
-import { createBundle } from "./bundle"
-import { copyFiles, dedupeSourceFiles, resolveDirectoryEntrypoints } from "./fs"
-import { loadPlugin, printPluginHelp, resolveEntrypoints } from "./plugins"
-import { spawnPuppet } from "./puppeteer"
-import { serveDirectory } from "./server"
-import { clearTemporaryFileCache, createTemporaryFileCache, writeBlankHtmlPage } from "./temporary"
-import { Entrypoint } from "./types"
+import * as runner from "./index"
+import { loadPlugin, printPluginHelp } from "./plugins"
+import { clearTemporaryFileCache } from "./temporary"
+
+type OraSpinner = ReturnType<typeof ora>
 
 const cli = meow(`
   Usage
@@ -45,27 +42,6 @@ function ensureArray (arg: string | string[] | undefined): string[] {
   }
 }
 
-function parseEntrypointArg (arg: string): Entrypoint {
-  const [sourcePath, servePath] = arg.split(":")
-  return {
-    servePath,
-    sourcePath
-  }
-}
-
-async function withSpinner<T>(promise: Promise<T>): Promise<T> {
-  const spinner = ora("Bundling code").start()
-
-  try {
-    const result = await promise
-    spinner.succeed("Bundling done.")
-    return result
-  } catch (error) {
-    spinner.fail("Bundling failed.")
-    throw error // re-throw
-  }
-}
-
 const argsSeparatorIndex = process.argv.indexOf("--")
 const runnerOptionArgs = argsSeparatorIndex > -1 ? process.argv.slice(2, argsSeparatorIndex) : process.argv.slice(2)
 const scriptArgs = argsSeparatorIndex > -1 ? process.argv.slice(argsSeparatorIndex + 1) : []
@@ -87,46 +63,34 @@ if (runnerOptionArgs.indexOf("--help") > -1 && plugins.length > 0) {
 }
 
 async function run() {
-  let exitCode = 0
+  let result: runner.RunnerResult | undefined
+  let spinner: OraSpinner | undefined
 
-  const headless = runnerOptionArgs.indexOf("--inspect") > -1 ? false : true
   const port = runnerOptions.p || runnerOptions.port
     ? parseInt(runnerOptions.p || runnerOptions.port, 10)
     : await getPort()
 
-  const additionalBundleEntries = await resolveDirectoryEntrypoints(
-    ensureArray(runnerOptions.bundle).map(parseEntrypointArg),
-    filenames => dedupeSourceFiles(filenames, true)
-  )
-  const additionalFilesToServe = await resolveDirectoryEntrypoints(ensureArray(runnerOptions.serve).map(parseEntrypointArg))
+  const entrypoints = runnerOptionArgs.filter(arg => arg.charAt(0) !== "-")
+  const headless = runnerOptionArgs.indexOf("--inspect") === -1
+  const keepTemporaryCache = Boolean(process.env.KEEP_TEMP_CACHE)
 
-  const entrypointArgs = runnerOptionArgs.filter(arg => arg.charAt(0) !== "-")
-  const entrypoints = await resolveEntrypoints(plugins, entrypointArgs.map(parseEntrypointArg), scriptArgs)
-
-  const temporaryCache = createTemporaryFileCache()
+  const onBundlingStart = () => {
+    spinner = ora("Bundling code").start()
+  }
+  const onBundlingError = () => spinner && spinner.fail("Bundling failed.")
+  const onBundlingSuccess = () => spinner && spinner.succeed("Bundling done.")
 
   try {
-    const serverURL = `http://localhost:${port}/`
-    writeBlankHtmlPage(path.join(temporaryCache, "index.html"))
-
-    const allBundles = await withSpinner(
-      Promise.all([...entrypoints, ...additionalBundleEntries].map(entrypoint => {
-        return createBundle(entrypoint, temporaryCache)
-      }))
-    )
-
-    const startupBundles = allBundles.slice(0, entrypoints.length)
-    const lazyBundles = allBundles.slice(entrypoints.length)
-
-    await copyFiles([...additionalFilesToServe, ...lazyBundles], temporaryCache)
-
-    const closeServer = await serveDirectory(temporaryCache, port)
-    const puppet = await spawnPuppet(startupBundles.map(entry => entry.servePath!), serverURL, { headless })
-    await puppet.run(scriptArgs, plugins)
-
-    exitCode = await puppet.waitForExit()
-    await puppet.close()
-    closeServer()
+    result = await runner.run(entrypoints, scriptArgs, {
+      bundle: ensureArray(runnerOptions.bundle),
+      headless,
+      keepTemporaryCache,
+      onBundlingError,
+      onBundlingStart,
+      onBundlingSuccess,
+      port,
+      serve: ensureArray(runnerOptions.serve)
+    })
   } catch (error) {
     if (headless) {
       throw error
@@ -136,19 +100,19 @@ async function run() {
       await new Promise(resolve => process.on("SIGINT", resolve))
     }
   } finally {
-    if (process.env.KEEP_TEMP_CACHE) {
+    if (keepTemporaryCache) {
       // tslint:disable-next-line:no-console
-      console.log(`Temporary cache written to: ${temporaryCache}`)
+      console.log(`Temporary cache written to: ${result!.temporaryCache}`)
     } else {
-      clearTemporaryFileCache(temporaryCache)
+      clearTemporaryFileCache(result!.temporaryCache)
     }
   }
 
-  if (exitCode > 0) {
+  if (result!.exitCode > 0) {
     // tslint:disable-next-line:no-console
-    console.log(`Script exited with exit code ${exitCode}.`)
+    console.log(`Script exited with exit code ${result!.exitCode}.`)
   }
-  process.exit(exitCode)
+  process.exit(result!.exitCode)
 }
 
 run().catch(error => {
