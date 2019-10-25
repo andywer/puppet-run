@@ -1,7 +1,11 @@
 import test from "tape"
 
-test.onFinish(() => puppet.exit(0))
-test.onFailure(() => puppet.exit(1))
+export default function () {
+  return new Promise((resolve, reject) => {
+    test.onFinish(() => resolve())
+    test.onFailure(() => reject(Error("Tape test run failed")))
+  })
+}
 
 test("1 + 2 = 3", t => {
   t.plan(1)

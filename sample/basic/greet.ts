@@ -1,14 +1,9 @@
 import print from "./print"
 
-declare const puppet: {
-  argv: string[],
-  exit (exitCode?: number): void
+export default async function (args: string[]) {
+  if (args.length === 0) {
+    print("Hello World")
+  } else {
+    print(`Hello, ${args[0]}!`)
+  }
 }
-
-if (puppet.argv.length === 0) {
-  print("Hello World")
-} else {
-  print(`Hello, ${puppet.argv[0]}!`)
-}
-
-puppet.exit(0)

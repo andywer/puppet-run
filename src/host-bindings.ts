@@ -3,7 +3,7 @@ import chalk from "chalk"
 import { ConsoleMessage, Page } from "puppeteer-core"
 
 export interface PuppetContextConfig<PluginsConfig extends {} = any> {
-  argv: string[],
+  args: string[],
   plugins: PluginsConfig
 }
 
@@ -66,9 +66,9 @@ export function captureFailedRequests(page: Page) {
   })
 }
 
-export function createPuppetContextConfig (argv: string[], plugins: any = {}) {
+export function createPuppetContextConfig (args: string[], plugins: any = {}) {
   return {
-    argv,
+    args,
     plugins
   }
 }
@@ -76,8 +76,8 @@ export function createPuppetContextConfig (argv: string[], plugins: any = {}) {
 export async function injectPuppetContext (page: Page, contextConfig: PuppetContextConfig) {
   await page.addScriptTag({
     content: `
-      window.puppet = {
-        argv: ${JSON.stringify(contextConfig.argv)},
+      window.headless = {
+        args: ${JSON.stringify(contextConfig.args)},
         plugins: ${JSON.stringify(contextConfig.plugins)},
         exit (exitCode = 0) {
           console.log(${JSON.stringify(magicLogMessageMarker)}, "exit", exitCode)

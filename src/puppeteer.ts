@@ -125,7 +125,7 @@ export async function spawnPuppet(bundleFilePaths: string[], serverURL: string, 
         await Promise.all(pendingPagePromises)
         await browser.close()
       } else {
-        return new Promise<void>(resolve => undefined)
+        return new Promise<void>(() => undefined)
       }
     },
     async run (argv: string[], plugins: Plugin[] = []) {

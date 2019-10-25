@@ -25,110 +25,138 @@ npm install run-headless
 
 ## Usage
 
-### Basics
-
-Running `run-headless` from the command line is simple. We can use npm's [npx tool](https://blog.npmjs.org/post/162869356040/introducing-npx-an-npm-package-runner) for convenience.
+We can use npm's [npx tool](https://blog.npmjs.org/post/162869356040/introducing-npx-an-npm-package-runner) to run a locally installed `run-headless` package.
 
 ```sh
-npx run-headless [<arguments>]
+npx run-headless [<options>] <file>
 
 # without npx
-node ./node_modules/.bin/run-headless [<arguments>]
+node ./node_modules/.bin/run-headless [<options>] <file>
+
+# with npx, but aliased
+ALIAS run-headless="npx run-headless"
+run-headless [<options>] <file>
 ```
 
-Pass any JavaScript or TypeScript file to `run-headless` as an entrypoint. It will be transpiled by Babel and bundled using `browserify`. It normally works out-of-the-box with zero configuration.
+To keep this documentation consistent, we will refer to `run-headless` invocations as `run-headless ...` from here on, without `npx`.
 
-```sh
-npx run-headless [...run-headless options] ./path/to/script.js [...script options]
+Run `run-headless --help` to print some general usage description.
+
+```
+Usage
+  $ run-headless <./entrypoint> [...more entrypoints] [-- <...script arguments>]
+  $ run-headless <./entrypoint>:</serve/here> [...more entrypoints] [-- <...script args>]
+  $ run-headless --plugin=<plugin> [<...entrypoints>] [-- <...script arguments>]
+
+Options
+  --help                            Show this help.
+  --inspect                         Run in actual Chrome window and keep it open.
+  --bundle <./file>[:</serve/here>] Bundle and serve additional files, but don't inject them.
+  --p <port>, --port <port>         Serve on this port. Defaults to random port.
+  --plugin <plugin>                 Load and apply plugin <plugin>.
+  --serve <./file>[:</serve/here>]  Serve additional files next to bundle.
+
+Example
+  $ run-headless ./sample/cowsays.js
+  $ run-headless ./sample/greet.ts newbie
+  $ run-headless --plugin=mocha ./sample/mocha-test.ts
 ```
 
-### Run mocha tests
 
-```sh
-npm install run-headless-plugin-mocha
-npx run-headless --plugin=mocha [...mocha options] ./path/to/*.test.js
-```
+## Scripts
 
-### Print help texts
+### Basics
 
-```sh
-npx run-headless --help
-```
-
-To print a plugin's help text:
-
-```sh
-npx run-headless --plugin=mocha --help
-```
-
-
-## Example
+The entrypoint script has to follow a simple convention: It is expected to export a function returning a promise. Once it resolves, the headless browser will be closed.
 
 ```js
-// sample.js
+// es-module-sample.js
 
-// Everything logged here will be piped to your host terminal
-console.log(`I am being run in a browser: ${navigator.userAgent}`)
+async function main() {
+  const response = await fetch("https://google.com/")
+  const text = await response.text()
 
-// Explicitly terminate the script when you are done
-puppet.exit()
+  // This should be logged to your terminal
+  console.log("Could fetch the Google page from within a browser:\n" + text)
+}
+
+export default main
 ```
 
-Don't forget to call `puppet.exit()` when the script is done, so `run-headless` knows that the script has finished. You can also exit with a non-zero exit code using `puppet.exit(statusCode: number)`.
+To write a CommonJS module, just replace the last line containing the `export default` with:
 
-Check out the  "Scripting API" section below if you want to learn more about the globally available `puppet` object.
+```js
+module.exports = main
+```
 
-Let's run the sample script!
+Running the script is as simple as:
 
 ```sh
-npx run-headless ./sample.js
+npx run-headless ./es-module-sample.js
 ```
 
-You should now see the output of the script on your terminal:
+### Errors
 
-```
-I am being run in a browser: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36
-```
-
-Have fun!
+In case the exported function throws an error, `run-headless` will print the error and stack trace, close the headless Chromium browser and exit with a non-zero exit code.
 
 
 ## Plugins
 
-Plugins make it easy to integrate your script with testing frameworks.
+Plugins can be used to provide convenience functionality or tweak the runner's behavior. They make it easy to integrate your script with testing frameworks.
 
 Check out the 👉 [plugins repository](https://github.com/andywer/run-headless-plugins) to see what's on offer.
 
 
 ## Scripting API
 
-The script runner will inject a `puppet` object into the browser window's global scope. It contains a couple of useful functions.
+### Entrypoint function
 
-#### `puppet.argv: string[]`
+This is the signature of the function that your entrypoint is supposed to export.
 
-Contains all the command line arguments and options passed to `run-headless` after the script file path.
+```ts
+function main(args: string[]): Promise<any>
+```
 
-#### `puppet.exit(exitCode?: number = 0)`
+#### args: string[]
+
+The arguments that were passed to `run-headless`. If you run `run-headless ./my-file foo bar`, then `args` will be `["foo", "bar"]`.
+
+### window.headless
+
+The script runner will inject a `headless` object into the browser window's global scope. It contains some useful methods.
+
+#### `headless.exit(exitCode?: number = 0)`
 
 Causes the script to end. The `run-headless` process will exit with the exit code you pass here.
 
 The exit code defaults to zero.
 
-#### `puppet.setOfflineMode(takeOffline: boolean = true)`
+#### `headless.setOfflineMode(takeOffline: boolean = true)`
 
 Puts the browser in offline mode and closes all active connections if called with `true` or no arguments. Call it with `false` to bring the browser back online.
 
 
 ## More features
 
-### Environment variables
+<details>
+<summary>
+  <b>Environment variables</b>
+</summary>
 
-You can access all environment variables of the host shell in your scripts as `process.env.*`.
+<br>
 
-### Source Maps
+You can access all environment variables of the host shell in your scripts as `process.env.VARIABLENAME`.
+</details>
+
+<details>
+<summary>
+  <b>Source Maps</b>
+</summary>
+
+<br>
 
 If an error is thrown, you will see the error and stack trace in your host shell. The stack trace will reference your source file lines, not the line in the bundle file that is actually served to the browser under the hood.
-
+</details>
 
 ## Samples
 
@@ -142,24 +170,47 @@ Have a look at the samples in the [`sample`](./sample) directory:
 
 ## Test framework support
 
-If you want to run tests in the browser using puppet-run, check out this list first:
+If you want to run tests in the browser using run-headless, check out this list first:
 
-#### ✅ Mocha
+<details>
+<summary>
+  <b>✅ Mocha</b>
+</summary>
 
-Works like a charm, see [`sample/mocha`](./sample/mocha) or [`sample/mocha-enzyme`](./sample/mocha-enzyme). They use the [Mocha Plugin](https://github.com/andywer/puppet-run-plugins/tree/master/packages/puppet-run-plugin-mocha).
+<br>
 
-#### ✅ Tape
+Works great when used with the [Mocha Plugin](https://github.com/andywer/run-headless-plugins/tree/master/packages/run-headless-plugin-mocha). See [`sample/mocha`](./sample/mocha) or [`sample/mocha-enzyme`](./sample/mocha-enzyme).
+</details>
+
+<details>
+<summary>
+  <b>✅ Tape</b>
+</summary>
+
+<br>
 
 Works like a charm, see [`sample/tape`](./sample/tape).
+</details>
 
-#### ❌ AVA
+<details>
+<summary>
+  <b>❌ AVA</b>
+</summary>
+
+<br>
 
 Currently not possible, since it's testing library and test runner code are too tightly coupled.
+</details>
 
-#### ❔ Jest
+<details>
+<summary>
+  <b>❔ Jest</b>
+</summary>
+
+<br>
 
 Didn't try yet.
-
+</details>
 
 ## License
 
