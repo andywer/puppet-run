@@ -6,11 +6,10 @@ import { getChromeLocation } from "./chrome-location"
 import {
   captureFailedRequests,
   capturePuppetConsole,
-  createPuppetContextConfig,
   injectPuppetContext,
   subscribeToMagicLogs
 } from "./host-bindings"
-import { createRuntimeConfig, Plugin } from "./plugins"
+import { createPluginContext, Plugin } from "./plugins"
 import ScriptError from "./script-error"
 
 declare const window: any;
@@ -128,12 +127,11 @@ export async function spawnPuppet(bundleFilePaths: string[], serverURL: string, 
         return new Promise<void>(() => undefined)
       }
     },
-    async run (argv: string[], plugins: Plugin[] = []) {
-      const pluginsConfig = await createRuntimeConfig(plugins, argv)
-      const contextConfig = createPuppetContextConfig(argv, pluginsConfig)
+    async run (args: string[], plugins: Plugin[] = []) {
+      const pluginContext = await createPluginContext(plugins, args)
       puppetExit = createExitPromise(page)
 
-      await injectPuppetContext(page, contextConfig)
+      await injectPuppetContext(page, { args, plugins: pluginContext })
 
       // Load bundles sequentially
       for (const bundlePath of bundleFilePaths) {

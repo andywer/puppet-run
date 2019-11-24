@@ -30,9 +30,9 @@ function loadPluginModule (packageName: string, pluginName: string): any {
 export function loadPlugin (entrypointArgument: string): Plugin {
   const pluginName = entrypointArgument.replace(/^plugin:/, "")
 
-  const packageName = pluginName.startsWith("puppet-run-plugin-")
+  const packageName = pluginName.startsWith("run-headless-")
     ? pluginName
-    : `puppet-run-plugin-${pluginName}`
+    : `run-headless-${pluginName}`
 
   const loadedModule = loadPluginModule(packageName, pluginName)
   validatePlugin(loadedModule, packageName)
@@ -71,14 +71,14 @@ export async function resolveEntrypoints(plugins: Plugin[], initialEntrypoints: 
   return entrypoints
 }
 
-export async function createRuntimeConfig(plugins: Plugin[], scriptArgs: string[]) {
-  let config: any = {}
+export async function createPluginContext(plugins: Plugin[], scriptArgs: string[]) {
+  let context: any = {}
 
   for (const plugin of plugins) {
-    config = plugin.extendPuppetDotPlugins
-      ? await plugin.extendPuppetDotPlugins(config, scriptArgs)
-      : config
+    context = plugin.extendContext
+      ? await plugin.extendContext(context, scriptArgs)
+      : context
   }
 
-  return config
+  return context
 }

@@ -32,13 +32,11 @@ npx run-headless [<options>] <file>
 
 # without npx
 node ./node_modules/.bin/run-headless [<options>] <file>
-
-# with npx, but aliased
-ALIAS run-headless="npx run-headless"
-run-headless [<options>] <file>
 ```
 
-To keep this documentation consistent, we will refer to `run-headless` invocations as `run-headless ...` from here on, without `npx`.
+*To keep this documentation consistent, we will refer to `run-headless` invocations as `run-headless ...` from here on, without `npx`.*
+
+#### Print help
 
 Run `run-headless --help` to print some general usage description.
 
@@ -60,6 +58,15 @@ Example
   $ run-headless ./sample/cowsays.js
   $ run-headless ./sample/greet.ts newbie
   $ run-headless --plugin=mocha ./sample/mocha-test.ts
+```
+
+#### Set an alias
+
+You can also define an alias in your `~/.bash_profile` file to always run the locally installed `run-headless` using `npx`.
+
+```sh
+ALIAS run-headless="npx run-headless"
+run-headless [<options>] <file>
 ```
 
 
@@ -92,7 +99,7 @@ module.exports = main
 Running the script is as simple as:
 
 ```sh
-npx run-headless ./es-module-sample.js
+run-headless ./es-module-sample.js
 ```
 
 ### Errors
@@ -179,7 +186,7 @@ If you want to run tests in the browser using run-headless, check out this list 
 
 <br>
 
-Works great when used with the [Mocha Plugin](https://github.com/andywer/run-headless-plugins/tree/master/packages/run-headless-plugin-mocha). See [`sample/mocha`](./sample/mocha) or [`sample/mocha-enzyme`](./sample/mocha-enzyme).
+Works great when used with the [Mocha Plugin](https://github.com/andywer/run-headless-plugins/tree/master/packages/run-headless-mocha). See [`sample/mocha`](./sample/mocha) or [`sample/mocha-enzyme`](./sample/mocha-enzyme).
 </details>
 
 <details>

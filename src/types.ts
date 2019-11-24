@@ -5,8 +5,8 @@ export interface Entrypoint {
 
 export interface Plugin {
   packageName: string,
-  extendPuppetDotPlugins?<InputConfig extends {}, OutputConfig extends InputConfig>(
-    puppetDotPlugins: InputConfig,
+  extendContext?<InputConfig extends {}, OutputConfig extends InputConfig>(
+    prevContext: InputConfig,
     scriptArgs: string[]
   ): Promise<OutputConfig>,
   help?(scriptArgs: string[]): string,

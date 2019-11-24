@@ -66,13 +66,6 @@ export function captureFailedRequests(page: Page) {
   })
 }
 
-export function createPuppetContextConfig (args: string[], plugins: any = {}) {
-  return {
-    args,
-    plugins
-  }
-}
-
 export async function injectPuppetContext (page: Page, contextConfig: PuppetContextConfig) {
   await page.addScriptTag({
     content: `
