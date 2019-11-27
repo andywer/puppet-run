@@ -6,7 +6,6 @@ import minimist from "minimist"
 import ora from "ora"
 import * as runner from "./index"
 import { loadPlugin, printPluginHelp } from "./plugins"
-import { clearTemporaryFileCache } from "./temporary"
 
 type OraSpinner = ReturnType<typeof ora>
 
@@ -89,7 +88,8 @@ async function run() {
       onBundlingStart,
       onBundlingSuccess,
       port,
-      serve: ensureArray(runnerOptions.serve)
+      serve: ensureArray(runnerOptions.serve),
+      throwOnNonZeroExitCodes: false
     })
   } catch (error) {
     if (headless) {
@@ -103,8 +103,6 @@ async function run() {
     if (keepTemporaryCache) {
       // tslint:disable-next-line:no-console
       console.log(`Temporary cache written to: ${result!.temporaryCache}`)
-    } else {
-      clearTemporaryFileCache(result!.temporaryCache)
     }
   }
 

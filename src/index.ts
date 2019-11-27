@@ -35,16 +35,36 @@ async function withSpinner<T>(promise: Promise<T>): Promise<T> {
 }
 
 export interface RunnerOptions {
+  /**
+   * Additional source files to bundle and serve, but not auto-run as entrypoints.
+   * Useful for web workers, for instance.
+   */
   bundle?: string[]
+  /**
+   * Whether to run the browser is headless mode. Set to `false` for easier debugging.
+   * Defaults to `true`.
+   */
   headless?: boolean
+  /**
+   * Halt the execution and keep the browser opened (when run with `headless` set to `false`)
+   * after scripts finish or fail. Useful for debugging.
+   */
   inspect?: boolean
+  /**
+   * Preserve the temporary caching directory instead of removing it after everything has run.
+   */
   keepTemporaryCache?: boolean
   onBundlingError?: () => void
   onBundlingStart?: () => void
   onBundlingSuccess?: () => void
+  /** Plugins to use. */
   plugins?: Plugin[]
+  /** Manually set a port on which to serve the bundles. */
   port?: number
+  /** Additional files or directories to serve statically, like stylesheets, images, ... */
   serve?: string[]
+  /** Whether to throw if the script exits with a non-zero exit code. Defaults to `true`. */
+  throwOnNonZeroExitCodes?: boolean
 }
 
 export interface RunnerResult {
@@ -65,6 +85,7 @@ export async function run(
 
   const port = options.port || await getPort()
   const serverURL = `http://localhost:${port}/`
+  const throwOnNonZeroExitCodes = options.throwOnNonZeroExitCodes === false ? false : true
 
   const additionalBundleEntries = await resolveDirectoryEntrypoints(
     (options.bundle || []).map(parseEntrypointArg),
@@ -107,6 +128,10 @@ export async function run(
     if (!options.keepTemporaryCache) {
       clearTemporaryFileCache(temporaryCache)
     }
+  }
+
+  if (exitCode !== 0 && throwOnNonZeroExitCodes) {
+    throw Error(`Script exited with code ${exitCode}`)
   }
 
   return {

@@ -22,24 +22,14 @@ export async function createBundle (entry: Entrypoint, cache: TemporaryFileCache
     const mod = require(${JSON.stringify(path.resolve(entry.sourcePath))})
     const entryFn = mod.default || mod
 
-    Promise.resolve()
-      .then(() => {
-        if (typeof entryFn !== "function") {
-          throw Error(
-            "Expected entry point module to export a function." +
-            "  Actual: " + entryFn + "\\n" +
-            "  File: " + ${JSON.stringify(path.resolve(entry.sourcePath))}
-          )
-        }
-        return entryFn(window.headless.args)
-      })
-      .then(
-        () => window.headless.exit(0),
-        error => {
-          console.error(error instanceof Error ? error.stack : error)
-          window.headless.exit(1)
-        }
+    if (typeof entryFn !== "function") {
+      throw Error(
+        "Expected entry point module to export a function." +
+        "  Actual: " + entryFn + "\\n" +
+        "  File: " + ${JSON.stringify(path.resolve(entry.sourcePath))}
       )
+    }
+    window.headless.run(entryFn)
   `
 
   fs.writeFileSync(generatedEntrypointPath, generatedEntrypointContent, "utf8")

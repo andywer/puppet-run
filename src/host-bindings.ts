@@ -69,16 +69,73 @@ export function captureFailedRequests(page: Page) {
 export async function injectPuppetContext (page: Page, contextConfig: PuppetContextConfig) {
   await page.addScriptTag({
     content: `
-      window.headless = {
-        args: ${JSON.stringify(contextConfig.args)},
-        plugins: ${JSON.stringify(contextConfig.plugins)},
-        exit (exitCode = 0) {
-          console.log(${JSON.stringify(magicLogMessageMarker)}, "exit", exitCode)
-        },
-        setOfflineMode (offline = true) {
-          return window.setPuppetOfflineMode(offline)
+      ;(function() {
+        let pendingHeadlessScriptRuns = []
+
+        function delay(ms) {
+          return new Promise(resolve => setTimeout(resolve, ms))
         }
-      };
+
+        function reportError(error) {
+          console.error(error && error.stack ? error.stack : error)
+        }
+
+        function trackPendingHeadlessScript(promise) {
+          pendingHeadlessScriptRuns.push(promise)
+        }
+
+        const createHeadlessScriptCompletionHandler = (promise) => () => {
+          pendingHeadlessScriptRuns = pendingHeadlessScriptRuns.filter(pending => pending !== promise)
+
+          if (pendingHeadlessScriptRuns.length === 0) {
+            window.headless.exit(0)
+          }
+        }
+
+        const createHeadlessScriptErrorHandler = (promise) => (error) => {
+          pendingHeadlessScriptRuns = pendingHeadlessScriptRuns.filter(pending => pending !== promise)
+
+          reportError(error)
+
+          if (pendingHeadlessScriptRuns.length === 0) {
+            delay(1).then(() => window.headless.exit(1))
+          }
+        }
+
+        window.headless = {
+          args: ${JSON.stringify(contextConfig.args)},
+          plugins: ${JSON.stringify(contextConfig.plugins)},
+          exit (exitCode = 0) {
+            console.log(${JSON.stringify(magicLogMessageMarker)}, "exit", exitCode)
+          },
+          run (runnable) {
+            let result
+            try {
+              result = typeof runnable === "function" ? runnable(window.headless.args) : runnable
+            } catch (error) {
+              reportError(error)
+              return window.headless.exit(1)
+            }
+
+            const scriptPromise = result && typeof result.then === "function"
+              ? result
+              : Promise.resolve(result)
+
+            // Take care not to resolve straight away, but give other code a chance to run, too
+            const completion = delay(1).then(() => scriptPromise)
+
+            trackPendingHeadlessScript(completion)
+
+            completion.then(
+              createHeadlessScriptCompletionHandler(completion),
+              createHeadlessScriptErrorHandler(completion)
+            )
+          },
+          setOfflineMode (offline = true) {
+            return window.setPuppetOfflineMode(offline)
+          }
+        };
+      })();
     `
   })
   await page.exposeFunction("setPuppetOfflineMode", (offlineMode: boolean) => page.setOfflineMode(offlineMode))
