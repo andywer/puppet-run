@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 import getPort from "get-port"
 import meow from "meow"
 import minimist from "minimist"
