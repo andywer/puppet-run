@@ -8,7 +8,7 @@ import nanoid from "nanoid"
 import { TemporaryFileCache } from "./temporary"
 import { Entrypoint } from "./types"
 
-export async function createBundle (entry: Entrypoint, cache: TemporaryFileCache): Promise<Entrypoint> {
+export async function createBundle (entry: Entrypoint, cache: TemporaryFileCache, isFirst?: boolean): Promise<Entrypoint> {
   // TODO: Use persistent cache
 
   const generatedEntrypointPath = path.join(cache, nanoid(8) + ".js")
@@ -41,8 +41,10 @@ export async function createBundle (entry: Entrypoint, cache: TemporaryFileCache
     const stream = browserify({
       debug: true,    // enables inline sourcemaps
       entries: [
-        require.resolve("@babel/register"),
-        require.resolve("@babel/polyfill"),
+        ...(isFirst ? [
+          require.resolve("@babel/register"),
+          require.resolve("@babel/polyfill")
+        ] : []),
         generatedEntrypointPath
       ],
       extensions
