@@ -4,6 +4,7 @@ import minimist from "minimist"
 import ora from "ora"
 import * as runner from "./index"
 import { loadPlugin, printPluginHelp } from "./plugins"
+import { Entrypoint } from "./types"
 
 type OraSpinner = ReturnType<typeof ora>
 
@@ -36,6 +37,14 @@ function ensureArray (arg: string | string[] | undefined): string[] {
     return arg
   } else {
     return [arg]
+  }
+}
+
+function parseEntrypointArg(arg: string): Entrypoint {
+  const [sourcePath, servePath] = arg.split(":")
+  return {
+    servePath,
+    sourcePath
   }
 }
 
@@ -79,14 +88,14 @@ async function run() {
 
   try {
     result = await runner.run(entrypoints, scriptArgs, {
-      bundle: ensureArray(runnerOptions.bundle),
+      bundle: ensureArray(runnerOptions.bundle).map(parseEntrypointArg),
       headless,
       keepTemporaryCache,
       onBundlingError,
       onBundlingStart,
       onBundlingSuccess,
       port,
-      serve: ensureArray(runnerOptions.serve),
+      serve: ensureArray(runnerOptions.serve).map(parseEntrypointArg),
       throwOnNonZeroExitCodes: false
     })
   } catch (error) {

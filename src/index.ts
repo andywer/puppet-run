@@ -2,7 +2,6 @@
 
 import { Console } from "console"
 import getPort from "get-port"
-import ora from "ora"
 import path from "path"
 import { createBundle } from "./bundle"
 import { copyFiles, dedupeSourceFiles, resolveDirectoryEntrypoints } from "./fs"
@@ -12,35 +11,16 @@ import { serveDirectory } from "./server"
 import { clearTemporaryFileCache, createTemporaryFileCache, writeBlankHtmlPage } from "./temporary"
 import { Entrypoint } from "./types"
 
+export { Entrypoint }
+
 const doNothing = () => undefined
-
-function parseEntrypointArg(arg: string): Entrypoint {
-  const [sourcePath, servePath] = arg.split(":")
-  return {
-    servePath,
-    sourcePath
-  }
-}
-
-async function withSpinner<T>(promise: Promise<T>): Promise<T> {
-  const spinner = ora("Bundling code").start()
-
-  try {
-    const result = await promise
-    spinner.succeed("Bundling done.")
-    return result
-  } catch (error) {
-    spinner.fail("Bundling failed.")
-    throw error // re-throw
-  }
-}
 
 export interface RunnerOptions {
   /**
    * Additional source files to bundle and serve, but not auto-run as entrypoints.
    * Useful for web workers, for instance.
    */
-  bundle?: string[]
+  bundle?: Entrypoint[]
   /**
    * Use a custom console instance instead of the default node.js global console.
    */
@@ -66,8 +46,10 @@ export interface RunnerOptions {
   plugins?: Plugin[]
   /** Manually set a port on which to serve the bundles. */
   port?: number
-  /** Additional files or directories to serve statically, like stylesheets, images, ... */
-  serve?: string[]
+  /**
+   * Additional files or directories to serve statically, like stylesheets, images, …
+   */
+  serve?: Entrypoint[]
   /** Whether to throw if the script exits with a non-zero exit code. Defaults to `true`. */
   throwOnNonZeroExitCodes?: boolean
 }
@@ -78,7 +60,7 @@ export interface RunnerResult {
 }
 
 export async function run(
-  entrypointFilePaths: string[],
+  entrypointFilePaths: Array<string | Entrypoint>,
   scriptArgs: string[] = [],
   options: RunnerOptions = {}
 ): Promise<RunnerResult> {
@@ -93,11 +75,16 @@ export async function run(
   const throwOnNonZeroExitCodes = options.throwOnNonZeroExitCodes === false ? false : true
 
   const additionalBundleEntries = await resolveDirectoryEntrypoints(
-    (options.bundle || []).map(parseEntrypointArg),
+    (options.bundle || []),
     filenames => dedupeSourceFiles(filenames, true)
   )
-  const additionalFilesToServe = await resolveDirectoryEntrypoints((options.serve || []).map(parseEntrypointArg))
-  const entrypoints = await resolveEntrypoints(options.plugins || [], entrypointFilePaths.map(parseEntrypointArg), scriptArgs)
+  const inputEntrypoints = entrypointFilePaths.map((input): Entrypoint => {
+    return typeof input === "string"
+      ? { sourcePath: input }
+      : input
+  })
+  const additionalFilesToServe = await resolveDirectoryEntrypoints(options.serve || [])
+  const entrypoints = await resolveEntrypoints(options.plugins || [], inputEntrypoints, scriptArgs)
 
   const temporaryCache = createTemporaryFileCache()
 
