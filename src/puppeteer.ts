@@ -1,3 +1,4 @@
+import { Console } from "console"
 import * as fs from "fs"
 import * as path from "path"
 import { launch, Page } from "puppeteer-core"
@@ -101,9 +102,15 @@ function createExitPromise (page: Page) {
   })
 }
 
-export async function spawnPuppet(bundleFilePaths: string[], serverURL: string, options: { headless?: boolean }): Promise<Puppet> {
+interface SpawnOptions {
+  console?: Console
+  headless?: boolean
+}
+
+export async function spawnPuppet(bundleFilePaths: string[], serverURL: string, options: SpawnOptions): Promise<Puppet> {
   let puppetExit: Promise<number>
-  const { headless = true } = options
+
+  const { console = global.console, headless = true } = options
 
   const browser = await launch({
     executablePath: getChromeLocation() || undefined,
@@ -115,8 +122,8 @@ export async function spawnPuppet(bundleFilePaths: string[], serverURL: string, 
   // Navigate to a secure origin first. See <https://github.com/GoogleChrome/puppeteer/issues/2301>
   await page.goto(serverURL + "index.html")
 
-  capturePuppetConsole(page)
-  captureFailedRequests(page)
+  capturePuppetConsole(page, console)
+  captureFailedRequests(page, console)
 
   return {
     async close () {

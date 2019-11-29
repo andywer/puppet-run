@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { Console } from "console"
 import getPort from "get-port"
 import ora from "ora"
 import path from "path"
@@ -40,6 +41,10 @@ export interface RunnerOptions {
    * Useful for web workers, for instance.
    */
   bundle?: string[]
+  /**
+   * Use a custom console instance instead of the default node.js global console.
+   */
+  console?: Console
   /**
    * Whether to run the browser is headless mode. Set to `false` for easier debugging.
    * Defaults to `true`.
@@ -118,7 +123,10 @@ export async function run(
     await copyFiles([...additionalFilesToServe, ...lazyBundles], temporaryCache)
 
     const closeServer = await serveDirectory(temporaryCache, port)
-    const puppet = await spawnPuppet(startupBundles.map(entry => entry.servePath!), serverURL, { headless: options.headless })
+    const puppet = await spawnPuppet(startupBundles.map(entry => entry.servePath!), serverURL, {
+      console: options.console,
+      headless: options.headless
+    })
     await puppet.run(scriptArgs, options.plugins)
 
     exitCode = await puppet.waitForExit()
