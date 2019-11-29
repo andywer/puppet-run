@@ -59,7 +59,7 @@ export interface RunnerOptions {
    * Preserve the temporary caching directory instead of removing it after everything has run.
    */
   keepTemporaryCache?: boolean
-  onBundlingError?: () => void
+  onBundlingError?: (error: Error) => void
   onBundlingStart?: () => void
   onBundlingSuccess?: () => void
   /** Plugins to use. */
@@ -113,7 +113,7 @@ export async function run(
       }))
       reportBundlingSuccess()
     } catch (error) {
-      reportBundlingError()
+      reportBundlingError(error)
       throw error
     }
 
@@ -121,10 +121,11 @@ export async function run(
     const lazyBundles = allBundles.slice(entrypoints.length)
 
     await copyFiles([...additionalFilesToServe, ...lazyBundles], temporaryCache)
-
     const closeServer = await serveDirectory(temporaryCache, port)
+
     const puppet = await spawnPuppet(startupBundles.map(entry => entry.servePath!), serverURL, {
       console: options.console,
+      devtools: !options.headless,
       headless: options.headless
     })
     await puppet.run(scriptArgs, options.plugins)

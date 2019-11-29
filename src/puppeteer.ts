@@ -104,6 +104,7 @@ function createExitPromise (page: Page) {
 
 interface SpawnOptions {
   console?: Console
+  devtools?: boolean,
   headless?: boolean
 }
 
@@ -114,6 +115,7 @@ export async function spawnPuppet(bundleFilePaths: string[], serverURL: string, 
 
   const browser = await launch({
     executablePath: getChromeLocation() || undefined,
+    devtools: options.devtools,
     headless
   })
 
