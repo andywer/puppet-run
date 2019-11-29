@@ -83,6 +83,20 @@ test("can run multiple entrypoints", async t => {
   t.is(console.getStdOut(), "Hello, world!\nDelayed by 100ms\nDelayed by 200ms\n")
 })
 
-test.todo("can serve additional files")
+test("can serve additional files", async t => {
+  const console = createCapturingConsole()
+  const result = await Headless.run([require.resolve("./_fixtures/fetch.js")], [], {
+    console,
+    serve: [{
+      servePath: "/test.json",
+      sourcePath: require.resolve("./_fixtures/test.json")
+    }]
+  })
+
+  t.is(result.exitCode, 0)
+  t.is(console.getStdErr().trim(), "")
+  t.is(console.getStdOut().trim(), '{"some":"data"}')
+})
+
 test.todo("can work with web workers")
 test.todo("can use plugins")
