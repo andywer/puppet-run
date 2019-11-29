@@ -108,8 +108,8 @@ export async function run(
 
     try {
       reportBundlingStart()
-      allBundles = await Promise.all([...entrypoints, ...additionalBundleEntries].map(entrypoint => {
-        return createBundle(entrypoint, temporaryCache)
+      allBundles = await Promise.all([...entrypoints, ...additionalBundleEntries].map((entrypoint, index) => {
+        return createBundle(entrypoint, temporaryCache, index === 0)
       }))
       reportBundlingSuccess()
     } catch (error) {
@@ -131,7 +131,12 @@ export async function run(
     await puppet.run(scriptArgs, options.plugins)
 
     exitCode = await puppet.waitForExit()
-    await puppet.close()
+
+    if (options.inspect) {
+      await new Promise(() => undefined)
+    } else {
+      await puppet.close()
+    }
     closeServer()
   } finally {
     if (!options.keepTemporaryCache) {

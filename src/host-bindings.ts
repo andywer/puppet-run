@@ -131,6 +131,8 @@ export async function injectPuppetContext (page: Page, contextConfig: PuppetCont
               createHeadlessScriptCompletionHandler(completion),
               createHeadlessScriptErrorHandler(completion)
             )
+
+            return completion
           },
           setOfflineMode (offline = true) {
             return window.setPuppetOfflineMode(offline)
