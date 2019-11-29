@@ -22,10 +22,13 @@ export async function createBundle (entry: Entrypoint, cache: TemporaryFileCache
     const mod = require(${JSON.stringify(path.resolve(entry.sourcePath))})
     const entryFn = mod.default || mod
 
+    if (typeof entryFn === "object" && entryFn && Object.keys(entryFn).length === 0) {
+      throw Error("No entry point function or promise has been exported. Did you forget to export it?")
+    }
     if (typeof entryFn !== "function") {
+      console.error("Unexpected entry point:", entryFn)
       throw Error(
         "Expected entry point module to export a function." +
-        "  Actual: " + entryFn + "\\n" +
         "  File: " + ${JSON.stringify(path.resolve(entry.sourcePath))}
       )
     }
