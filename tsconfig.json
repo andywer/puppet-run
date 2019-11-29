@@ -9,7 +9,7 @@
     "outDir": "dist",
     "skipLibCheck": true,
     "strict": true,
-    "target": "es5"
+    "target": "es2017"
   },
   "include": [
     "./src/cli.ts",
