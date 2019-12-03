@@ -11,7 +11,7 @@ import { serveDirectory } from "./server"
 import { clearTemporaryFileCache, createTemporaryFileCache, writeBlankHtmlPage } from "./temporary"
 import { Entrypoint } from "./types"
 
-export { Entrypoint }
+export { Entrypoint, Plugin }
 
 const doNothing = () => undefined
 

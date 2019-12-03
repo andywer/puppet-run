@@ -4,11 +4,13 @@ export interface Entrypoint {
 }
 
 export interface Plugin {
-  packageName: string,
-  extendContext?<InputConfig extends {}, OutputConfig extends InputConfig>(
-    prevContext: InputConfig,
-    scriptArgs: string[]
-  ): Promise<OutputConfig>,
-  help?(scriptArgs: string[]): string,
-  resolveBundleEntrypoints?(entrypoints: Entrypoint[], scriptArgs: string[]): Promise<Entrypoint[]>
+  packageName: string
+  extensions: {
+    extendContext?<InputConfig extends {}, OutputConfig extends InputConfig>(
+      prevContext: InputConfig,
+      scriptArgs: string[]
+    ): Promise<OutputConfig>
+    extendEntrypoints?(entrypoints: Entrypoint[], scriptArgs: string[]): Promise<Entrypoint[]>
+  }
+  help?(scriptArgs: string[]): string
 }

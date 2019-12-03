@@ -5,8 +5,11 @@ import { Entrypoint, Plugin } from "./types"
 export { Plugin }
 
 function validatePlugin (plugin: Plugin, packageName: string) {
-  if (typeof plugin.resolveBundleEntrypoints !== "function") {
-    throw new Error(`Bad plugin package: ${packageName}\nShould export a function "resolveBundleEntrypoints".`)
+  if (!plugin.packageName || typeof plugin.packageName !== "string") {
+    throw new Error(`Bad plugin package: ${packageName}\nShould export a string "packageName".`)
+  }
+  if (!plugin.extensions || typeof plugin.extensions !== "object") {
+    throw new Error(`Bad plugin package: ${packageName}\nShould export an object "extensions".`)
   }
 }
 
@@ -63,9 +66,8 @@ export async function resolveEntrypoints(plugins: Plugin[], initialEntrypoints: 
   let entrypoints: Entrypoint[] = initialEntrypoints
 
   for (const plugin of plugins) {
-    entrypoints = plugin.resolveBundleEntrypoints
-      ? await plugin.resolveBundleEntrypoints(entrypoints, scriptArgs)
-      : entrypoints
+    if (plugin.extensions.extendEntrypoints)
+    entrypoints = await plugin.extensions.extendEntrypoints(entrypoints, scriptArgs)
   }
 
   return entrypoints
@@ -75,9 +77,9 @@ export async function createPluginContext(plugins: Plugin[], scriptArgs: string[
   let context: any = {}
 
   for (const plugin of plugins) {
-    context = plugin.extendContext
-      ? await plugin.extendContext(context, scriptArgs)
-      : context
+    if (plugin.extensions.extendContext) {
+      context = await plugin.extensions.extendContext(context, scriptArgs)
+    }
   }
 
   return context
