@@ -6,7 +6,7 @@ import rimraf from "rimraf"
 export type TemporaryFileCache = string
 
 export function createTemporaryFileCache (): TemporaryFileCache {
-  return fs.mkdtempSync(path.join(os.tmpdir(), "run-headless-cache"))
+  return fs.mkdtempSync(path.join(os.tmpdir(), "headlessly-cache"))
 }
 
 export function clearTemporaryFileCache (cache: TemporaryFileCache) {

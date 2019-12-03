@@ -30,9 +30,9 @@ function loadPluginModule (packageName: string, pluginName: string): any {
 export function loadPlugin (entrypointArgument: string): Plugin {
   const pluginName = entrypointArgument.replace(/^plugin:/, "")
 
-  const packageName = pluginName.startsWith("run-headless-")
+  const packageName = pluginName.startsWith("headlessly-")
     ? pluginName
-    : `run-headless-${pluginName}`
+    : `headlessly-${pluginName}`
 
   const loadedModule = loadPluginModule(packageName, pluginName)
   validatePlugin(loadedModule, packageName)

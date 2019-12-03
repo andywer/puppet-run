@@ -10,9 +10,9 @@ type OraSpinner = ReturnType<typeof ora>
 
 const cli = meow(`
   Usage
-    $ run-headless <./entrypoint> [...more entrypoints] [-- <...script arguments>]
-    $ run-headless <./entrypoint>:</serve/here> [...more entrypoints] [-- <...script args>]
-    $ run-headless --plugin=<plugin> [<...entrypoints>] [-- <...script arguments>]
+    $ headlessly <./entrypoint> [...more entrypoints] [-- <...script arguments>]
+    $ headlessly <./entrypoint>:</serve/here> [...more entrypoints] [-- <...script args>]
+    $ headlessly --plugin=<plugin> [<...entrypoints>] [-- <...script arguments>]
 
   Options
     --help                            Show this help.
@@ -23,9 +23,9 @@ const cli = meow(`
     --serve <./file>[:</serve/here>]  Serve additional files next to bundle.
 
   Example
-    $ run-headless ./sample/cowsays.js
-    $ run-headless ./sample/greet.ts newbie
-    $ run-headless --plugin=mocha ./sample/mocha-test.ts
+    $ headlessly ./sample/cowsays.js
+    $ headlessly ./sample/greet.ts newbie
+    $ headlessly --plugin=mocha ./sample/mocha-test.ts
 `, {
   autoHelp: false
 })

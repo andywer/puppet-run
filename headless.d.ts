@@ -1,5 +1,5 @@
 interface Headless {
-  /** The arguments passed to `run-headless`. */
+  /** The arguments passed to `headlessly`. */
   args: string[]
 
   /**

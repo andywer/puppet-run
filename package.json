@@ -1,10 +1,10 @@
 {
-  "name": "run-headless",
+  "name": "headlessly",
   "version": "0.10.0",
   "license": "MIT",
   "description": "Run anything JavaScript in a headless Chrome from your command line.",
   "author": "Andy Wermke (https://github.com/andywer)",
-  "repository": "github:andywer/run-headless",
+  "repository": "github:andywer/headlessly",
   "bin": "./cli.js",
   "scripts": {
     "prebuild": "rimraf dist/",
