@@ -1,6 +1,6 @@
 {
   "name": "headlessly",
-  "version": "0.10.0",
+  "version": "0.11.0-alpha",
   "license": "MIT",
   "description": "Run anything JavaScript in a headless Chrome from your command line.",
   "author": "Andy Wermke (https://github.com/andywer)",
