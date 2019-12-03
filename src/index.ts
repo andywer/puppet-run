@@ -5,13 +5,13 @@ import getPort from "get-port"
 import path from "path"
 import { createBundle } from "./bundle"
 import { copyFiles, dedupeSourceFiles, resolveDirectoryEntrypoints } from "./fs"
-import { resolveEntrypoints, Plugin } from "./plugins"
+import { createPluginSet, Plugin } from "./plugins"
 import { spawnPuppet } from "./puppeteer"
 import { serveDirectory } from "./server"
 import { clearTemporaryFileCache, createTemporaryFileCache, writeBlankHtmlPage } from "./temporary"
 import { Entrypoint } from "./types"
 
-export { Entrypoint, Plugin }
+export * from "./types"
 
 const doNothing = () => undefined
 
@@ -83,10 +83,12 @@ export async function run(
       ? { sourcePath: input }
       : input
   })
-  const additionalFilesToServe = await resolveDirectoryEntrypoints(options.serve || [])
-  const entrypoints = await resolveEntrypoints(options.plugins || [], inputEntrypoints, scriptArgs)
 
+  const pluginSet = await createPluginSet(options.plugins || [], scriptArgs)
   const temporaryCache = createTemporaryFileCache()
+
+  const additionalFilesToServe = await resolveDirectoryEntrypoints(options.serve || [])
+  const entrypoints = await pluginSet.resolveEntrypoints(inputEntrypoints)
 
   try {
     let allBundles: Entrypoint[]
@@ -115,7 +117,7 @@ export async function run(
       devtools: !options.headless,
       headless: options.headless
     })
-    await puppet.run(scriptArgs, options.plugins)
+    await puppet.run(scriptArgs, pluginSet)
 
     exitCode = await puppet.waitForExit()
 

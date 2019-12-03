@@ -1,7 +1,8 @@
 // tslint:disable:no-console
 import chalk from "chalk"
 import { Console } from "console"
-import { ConsoleMessage, Page } from "puppeteer-core"
+import { ConsoleMessage, Page, ConsoleMessageType } from "puppeteer-core"
+import { MessageBus } from "./types"
 
 export interface PuppetContextConfig<PluginsConfig extends {} = any> {
   args: string[],
@@ -20,37 +21,6 @@ async function consoleMessageToLogArgs (message: ConsoleMessage) {
   args.forEach(arg => arg.dispose())
 
   return jsonArgs
-}
-
-export function capturePuppetConsole (page: Page, console: Console = global.console) {
-  page.on("console", async message => {
-    const type = message.type()
-
-    // Ignore magic messages, since they are control messages
-    if (message.text().startsWith(magicLogMessageMarker)) return
-
-    const consoleArgs = await consoleMessageToLogArgs(message)
-
-    if (type === "clear") {
-      return console.clear()
-    } else if (type === "startGroupCollapsed") {
-      return console.groupCollapsed()
-    } else if (type === "endGroup") {
-      return console.groupEnd()
-    }
-
-    if (type === "error") {
-      console.error(...consoleArgs)
-    } else if (type === "warning") {
-      console.warn(...consoleArgs)
-    } else if (type === "debug") {
-      console.debug(...consoleArgs)
-    } else if (type === "startGroup") {
-      console.group(...consoleArgs)
-    } else {
-      console.log(...consoleArgs)
-    }
-  })
 }
 
 export function captureFailedRequests(page: Page, console: Console = global.console) {
@@ -109,6 +79,9 @@ export async function injectPuppetContext (page: Page, contextConfig: PuppetCont
           exit (exitCode = 0) {
             console.log(${JSON.stringify(magicLogMessageMarker)}, "exit", exitCode)
           },
+          postMessage (type, ...args) {
+            console.log(${JSON.stringify(magicLogMessageMarker)}, type, ...args)
+          },
           run (runnable) {
             let result
             try {
@@ -144,26 +117,70 @@ export async function injectPuppetContext (page: Page, contextConfig: PuppetCont
   await page.exposeFunction("setPuppetOfflineMode", (offlineMode: boolean) => page.setOfflineMode(offlineMode))
 }
 
-export function subscribeToMagicLogs (page: Page, subscriber: (type: string, args: any[]) => void) {
+export function pipeToHostConsole(console: Console, logType: ConsoleMessageType, ...consoleArgs: any[]) {
+  if (logType === "clear") {
+    return console.clear()
+  } else if (logType === "startGroupCollapsed") {
+    return console.groupCollapsed()
+  } else if (logType === "endGroup") {
+    return console.groupEnd()
+  }
+
+  if (logType === "error") {
+    console.error(...consoleArgs)
+  } else if (logType === "warning") {
+    console.warn(...consoleArgs)
+  } else if (logType === "debug") {
+    console.debug(...consoleArgs)
+  } else if (logType === "startGroup") {
+    console.group(...consoleArgs)
+  } else {
+    console.log(...consoleArgs)
+  }
+}
+
+export function subscribeToPuppetConsole(page: Page, subscriber: (logType: ConsoleMessageType, ...args: any[]) => void) {
   const handler = async (message: ConsoleMessage) => {
-    const args = message.args()
-    if (args.length < 2) return
+    const logType = message.type()
 
-    const firstArgument = await args[0].jsonValue()
-    if (firstArgument !== magicLogMessageMarker) return
+    // Ignore magic messages, since they are control messages
+    if (message.text().startsWith(magicLogMessageMarker)) return
 
-    const [type, ...otherArgs] = await Promise.all(
-      args.slice(1).map(arg => arg.jsonValue())
-    )
+    const consoleArgs = await consoleMessageToLogArgs(message)
 
-    // Don't forget to dispose eventually, to enable garbage collection of log message args
-    args.forEach(arg => arg.dispose())
-
-    subscriber(type, otherArgs)
+    subscriber(logType, ...consoleArgs)
   }
 
   page.on("console", handler)
   const unsubscribe = () => page.off("console", handler)
 
   return unsubscribe
+}
+
+export function createMessageBus(page: Page): MessageBus {
+  return {
+    subscribeToMessages(subscriber: (type: string, args: any[]) => void) {
+      const handler = async (message: ConsoleMessage) => {
+        const args = message.args()
+        if (args.length < 2) return
+
+        const firstArgument = await args[0].jsonValue()
+        if (firstArgument !== magicLogMessageMarker) return
+
+        const [type, ...otherArgs] = await Promise.all(
+          args.slice(1).map(arg => arg.jsonValue())
+        )
+
+        // Don't forget to dispose eventually, to enable garbage collection of log message args
+        args.forEach(arg => arg.dispose())
+
+        subscriber(type, otherArgs)
+      }
+
+      page.on("console", handler)
+      const unsubscribe = () => page.off("console", handler)
+
+      return unsubscribe
+    }
+  }
 }

@@ -6,12 +6,13 @@ import { URL } from "url"
 import { getChromeLocation } from "./chrome-location"
 import {
   captureFailedRequests,
-  capturePuppetConsole,
+  createMessageBus,
   injectPuppetContext,
-  subscribeToMagicLogs
+  pipeToHostConsole,
+  subscribeToPuppetConsole
 } from "./host-bindings"
-import { createPluginContext, Plugin } from "./plugins"
 import ScriptError from "./script-error"
+import { MessageBus, PluginSet } from "./types"
 
 declare const window: any;
 
@@ -20,7 +21,7 @@ export interface Puppet {
   once: Page["once"],
   off: Page["off"],
   close (): Promise<void>,
-  run (argv: string[], plugins?: Plugin[]): Promise<void>,
+  run (argv: string[], pluginSet: PluginSet): Promise<void>,
   waitForExit (): Promise<number>
 }
 
@@ -75,15 +76,16 @@ async function resolveToScriptError (page: Page, error: Error) {
   }
 }
 
-function createExitPromise (page: Page) {
+function createExitPromise (page: Page, messageBus: MessageBus) {
   let exited = false
   return new Promise<number>((resolve, reject) => {
-    subscribeToMagicLogs(page, (type, args) => {
+    messageBus.subscribeToMessages((type, args) => {
       if (type === "exit") {
         exited = true
         resolve(args[0] as number)
       }
     })
+
     // tslint:disable-next-line:no-console
     const fail = (error: Error) => exited ? console.error(error) : reject(error)
     const handleScriptError = (error: Error) => {
@@ -124,19 +126,19 @@ export async function spawnPuppet(bundleFilePaths: string[], serverURL: string, 
   // Navigate to a secure origin first. See <https://github.com/GoogleChrome/puppeteer/issues/2301>
   await page.goto(serverURL + "index.html")
 
-  capturePuppetConsole(page, console)
   captureFailedRequests(page, console)
+  subscribeToPuppetConsole(page, pipeToHostConsole.bind(null, console))
 
   return {
     async close () {
       await Promise.all(pendingPagePromises)
       await browser.close()
     },
-    async run (args: string[], plugins: Plugin[] = []) {
-      const pluginContext = await createPluginContext(plugins, args)
-      puppetExit = createExitPromise(page)
+    async run (args: string[], pluginSet: PluginSet) {
+      const messageBus = pluginSet.extendMessageBus(createMessageBus(page))
+      puppetExit = createExitPromise(page, messageBus)
 
-      await injectPuppetContext(page, { args, plugins: pluginContext })
+      await injectPuppetContext(page, { args, plugins: pluginSet.context })
 
       // Load bundles sequentially
       for (const bundlePath of bundleFilePaths) {

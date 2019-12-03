@@ -11,6 +11,11 @@ interface Headless {
   exit(exitCode?: number): void
 
   /**
+   * Send a message to the message bus outside the browser. To be used by plugins.
+   */
+  postMessage(type: string, ...args: any[]): void
+
+  /**
    * Run a function or track an existing promise. The script will be considered to have
    * finished once all runnables have completed execution.
    *

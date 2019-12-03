@@ -142,6 +142,40 @@ The exit code defaults to zero.
 Puts the browser in offline mode and closes all active connections if called with `true` or no arguments. Call it with `false` to bring the browser back online.
 
 
+## Plugin API
+
+A plugin is an npm package that is usually called `headlessly-plugin-XYZ` and exports the following properties from its entrypoint module.
+
+```ts
+interface Plugin {
+  /** Name of the package. Example: "headlessly-plugin-XYZ" */
+  packageName: string
+  /** Defines the extension points that allow your plugin to integrate with the script run in the browser. */
+  extensions: {
+    /**
+     * Takes some context object (defaults to `{}`) and returns a modified context that is passed on to the next plugin and finally exposed to the browser script as `headless.plugins`.
+     */
+    extendContext?<InputConfig extends {}, OutputConfig extends InputConfig>(
+      prevContext: InputConfig,
+      scriptArgs: string[]
+    ): OutputConfig
+    /** Allows modifying the entrypoints that will be bundled and run in the browser. */
+    extendEntrypoints?(entrypoints: Entrypoint[], scriptArgs: string[]): Promise<Entrypoint[]>
+    /** Allows the plugin to subscribe to messages sent via `headless.postMessage()`. */
+    extendMessageBus?(messageBus: MessageBus): void
+  }
+  /** Return a usage help message. Can be multi-line. Optional. */
+  help?(scriptArgs: string[]): string
+}
+```
+
+You can import the TypeScript interface from headlessly:
+
+```ts
+import { Plugin } from "headlessly"
+```
+
+
 ## More features
 
 <details>
@@ -205,17 +239,17 @@ Works like a charm, see [`sample/tape`](./sample/tape).
 
 <br>
 
-Currently not possible, since it's testing library and test runner code are too tightly coupled.
+Currently not possible, since it's testing library and test runner code are too tightly coupled. The test runner only works in node.js.
 </details>
 
 <details>
 <summary>
-  <b>❔ Jest</b>
+  <b>❌ Jest</b>
 </summary>
 
 <br>
 
-Didn't try yet.
+Jest comes with various kinds of gizmos that cannot be run in a browser.
 </details>
 
 ## License

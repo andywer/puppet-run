@@ -1,8 +1,8 @@
 import dedent from "dedent"
 import * as path from "path"
-import { Entrypoint, Plugin } from "./types"
+import { Entrypoint, MessageBus, Plugin, PluginSet } from "./types"
 
-export { Plugin }
+export { Plugin, PluginSet }
 
 function validatePlugin (plugin: Plugin, packageName: string) {
   if (!plugin.packageName || typeof plugin.packageName !== "string") {
@@ -62,25 +62,43 @@ export function printPluginHelp (plugin: Plugin, scriptArgs: string[]) {
   }
 }
 
-export async function resolveEntrypoints(plugins: Plugin[], initialEntrypoints: Entrypoint[], scriptArgs: string[]): Promise<Entrypoint[]> {
-  let entrypoints: Entrypoint[] = initialEntrypoints
-
-  for (const plugin of plugins) {
-    if (plugin.extensions.extendEntrypoints)
-    entrypoints = await plugin.extensions.extendEntrypoints(entrypoints, scriptArgs)
-  }
-
-  return entrypoints
-}
-
-export async function createPluginContext(plugins: Plugin[], scriptArgs: string[]) {
+function createPluginContext(plugins: Plugin[], scriptArgs: string[]) {
   let context: any = {}
 
   for (const plugin of plugins) {
     if (plugin.extensions.extendContext) {
-      context = await plugin.extensions.extendContext(context, scriptArgs)
+      context = plugin.extensions.extendContext(context, scriptArgs)
     }
   }
 
   return context
+}
+
+export function createPluginSet(plugins: Plugin[], scriptArgs: string[]): PluginSet {
+  const context = createPluginContext(plugins, scriptArgs)
+
+  return {
+    context,
+
+    extendMessageBus(messageBus: MessageBus) {
+      for (const plugin of plugins) {
+        if (plugin.extensions.extendMessageBus) {
+          plugin.extensions.extendMessageBus(messageBus)
+        }
+      }
+      return messageBus
+    },
+
+    async resolveEntrypoints(initialEntrypoints: Entrypoint[]): Promise<Entrypoint[]> {
+      let entrypoints: Entrypoint[] = initialEntrypoints
+
+      for (const plugin of plugins) {
+        if (plugin.extensions.extendEntrypoints) {
+          entrypoints = await plugin.extensions.extendEntrypoints(entrypoints, scriptArgs)
+        }
+      }
+
+      return entrypoints
+    }
+  }
 }
