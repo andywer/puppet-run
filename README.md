@@ -163,6 +163,8 @@ interface Plugin {
     extendEntrypoints?(entrypoints: Entrypoint[], scriptArgs: string[]): Promise<Entrypoint[]>
     /** Allows the plugin to subscribe to messages sent via `headless.postMessage()`. */
     extendMessageBus?(messageBus: MessageBus): void
+    /** Allows subscribing to page events or to execute commands on the page. */
+    extendPage?(page: Page): Promise<void>
   }
   /** Return a usage help message. Can be multi-line. Optional. */
   help?(scriptArgs: string[]): string

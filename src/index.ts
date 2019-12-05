@@ -84,7 +84,7 @@ export async function run(
       : input
   })
 
-  const pluginSet = await createPluginSet(options.plugins || [], scriptArgs)
+  const pluginSet = createPluginSet(options.plugins || [], scriptArgs)
   const temporaryCache = createTemporaryFileCache()
 
   const additionalFilesToServe = await resolveDirectoryEntrypoints(options.serve || [])

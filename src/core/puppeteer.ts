@@ -136,6 +136,8 @@ export async function spawnPuppet(bundleFilePaths: string[], serverURL: string, 
     },
     async run (args: string[], pluginSet: PluginSet) {
       const messageBus = pluginSet.extendMessageBus(createMessageBus(page))
+
+      await pluginSet.extendPage(page)
       puppetExit = createExitPromise(page, messageBus)
 
       await injectPuppetContext(page, { args, plugins: pluginSet.context })

@@ -1,5 +1,6 @@
 import dedent from "dedent"
 import * as path from "path"
+import { Page } from "puppeteer-core"
 import { Entrypoint, MessageBus, Plugin, PluginSet } from "../types"
 
 export { Plugin, PluginSet }
@@ -87,6 +88,14 @@ export function createPluginSet(plugins: Plugin[], scriptArgs: string[]): Plugin
         }
       }
       return messageBus
+    },
+
+    async extendPage(page: Page) {
+      for (const plugin of plugins) {
+        if (plugin.extensions.extendPage) {
+          await plugin.extensions.extendPage(page)
+        }
+      }
     },
 
     async resolveEntrypoints(initialEntrypoints: Entrypoint[]): Promise<Entrypoint[]> {
