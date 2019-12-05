@@ -2,7 +2,7 @@
 import chalk from "chalk"
 import { Console } from "console"
 import { ConsoleMessage, Page, ConsoleMessageType } from "puppeteer-core"
-import { MessageBus } from "./types"
+import { MessageBus } from "../types"
 
 export interface PuppetContextConfig<PluginsConfig extends {} = any> {
   args: string[],

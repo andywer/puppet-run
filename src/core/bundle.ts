@@ -6,7 +6,7 @@ import envify from "envify"
 import mkdirp from "mkdirp"
 import nanoid from "nanoid"
 import { TemporaryFileCache } from "./temporary"
-import { Entrypoint } from "./types"
+import { Entrypoint } from "../types"
 
 export async function createBundle (entry: Entrypoint, cache: TemporaryFileCache, isFirst?: boolean): Promise<Entrypoint> {
   // TODO: Use persistent cache

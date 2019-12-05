@@ -3,7 +3,7 @@ import meow from "meow"
 import minimist from "minimist"
 import ora from "ora"
 import * as runner from "./index"
-import { loadPlugin, printPluginHelp } from "./plugins"
+import { loadPlugin, printPluginHelp } from "./core/plugins"
 import { Entrypoint } from "./types"
 
 type OraSpinner = ReturnType<typeof ora>

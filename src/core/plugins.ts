@@ -1,6 +1,6 @@
 import dedent from "dedent"
 import * as path from "path"
-import { Entrypoint, MessageBus, Plugin, PluginSet } from "./types"
+import { Entrypoint, MessageBus, Plugin, PluginSet } from "../types"
 
 export { Plugin, PluginSet }
 

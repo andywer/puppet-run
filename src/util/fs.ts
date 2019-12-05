@@ -2,7 +2,7 @@ import * as fs from "fs"
 import * as path from "path"
 import mkdirp from "mkdirp"
 import * as util from "util"
-import { Entrypoint } from "./types"
+import { Entrypoint } from "../types"
 
 const passthrough = <T>(thing: T) => thing
 

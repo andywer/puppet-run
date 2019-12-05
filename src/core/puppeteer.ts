@@ -3,7 +3,7 @@ import * as fs from "fs"
 import * as path from "path"
 import { launch, Page } from "puppeteer-core"
 import { URL } from "url"
-import { getChromeLocation } from "./chrome-location"
+import { getChromeLocation } from "../platform/chrome-location"
 import {
   captureFailedRequests,
   createMessageBus,
@@ -11,8 +11,8 @@ import {
   pipeToHostConsole,
   subscribeToPuppetConsole
 } from "./host-bindings"
-import ScriptError from "./script-error"
-import { MessageBus, PluginSet } from "./types"
+import ScriptError from "../util/script-error"
+import { MessageBus, PluginSet } from "../types"
 
 declare const window: any;
 
