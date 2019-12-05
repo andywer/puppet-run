@@ -32,13 +32,19 @@ function trackPendingPagePromise (promise: Promise<any>) {
   return promise
 }
 
-async function loadBundle (page: Page, bundleFilePath: string, serverURL: string): Promise<void> {
+async function loadBundles (page: Page, bundleFilePaths: string[], serverURL: string): Promise<void> {
   await page.addScriptTag({
     content: fs.readFileSync(require.resolve("sourcemapped-stacktrace/dist/sourcemapped-stacktrace.js"), "utf8")
   })
 
-  await page.addScriptTag({
-    url: new URL(bundleFilePath, serverURL).toString()
+  for (const bundleFilePath of bundleFilePaths) {
+    await page.addScriptTag({
+      url: new URL(bundleFilePath, serverURL).toString()
+    })
+  }
+
+  await page.evaluate(() => {
+    window.headless._bundlesLoaded()
   })
 }
 
@@ -141,11 +147,7 @@ export async function spawnPuppet(bundleFilePaths: string[], serverURL: string, 
       puppetExit = createExitPromise(page, messageBus)
 
       await injectPuppetContext(page, { args, plugins: pluginSet.context })
-
-      // Load bundles sequentially
-      for (const bundlePath of bundleFilePaths) {
-        await loadBundle(page, bundlePath, serverURL)
-      }
+      await loadBundles(page, bundleFilePaths, serverURL)
     },
     async waitForExit () {
       return puppetExit

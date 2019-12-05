@@ -58,9 +58,11 @@ export async function injectPuppetContext (page: Page, contextConfig: PuppetCont
         const createHeadlessScriptCompletionHandler = (promise) => () => {
           pendingHeadlessScriptRuns = pendingHeadlessScriptRuns.filter(pending => pending !== promise)
 
-          if (pendingHeadlessScriptRuns.length === 0) {
-            window.headless.exit(0)
-          }
+          bundlesLoaded.then(() => {
+            if (pendingHeadlessScriptRuns.length === 0) {
+              window.headless.exit(0)
+            }
+          })
         }
 
         const createHeadlessScriptErrorHandler = (promise) => (error) => {
@@ -68,9 +70,11 @@ export async function injectPuppetContext (page: Page, contextConfig: PuppetCont
 
           reportError(error)
 
-          if (pendingHeadlessScriptRuns.length === 0) {
-            delay(1).then(() => window.headless.exit(1))
-          }
+          bundlesLoaded.then(() => {
+            if (pendingHeadlessScriptRuns.length === 0) {
+              delay(1).then(() => window.headless.exit(1))
+            }
+          })
         }
 
         window.headless = {
@@ -111,6 +115,10 @@ export async function injectPuppetContext (page: Page, contextConfig: PuppetCont
             return window.setPuppetOfflineMode(offline)
           }
         };
+
+        const bundlesLoaded = new Promise(resolve => {
+          window.headless._bundlesLoaded = () => resolve()
+        })
       })();
     `
   })
