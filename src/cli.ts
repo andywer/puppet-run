@@ -100,7 +100,7 @@ async function run() {
   )
   const additionalFilesToServe = await resolveDirectoryEntrypoints(ensureArray(runnerOptions.serve).map(parseEntrypointArg))
 
-  const entrypointArgs = runnerOptionArgs.filter(arg => arg.charAt(0) !== "-")
+  const entrypointArgs = runnerOptions._
   const entrypoints = await resolveEntrypoints(plugins, entrypointArgs.map(parseEntrypointArg), scriptArgs)
 
   const temporaryCache = createTemporaryFileCache()
