@@ -1,7 +1,7 @@
 import * as fs from "fs"
 import * as os from "os"
 import * as path from "path"
-import rimraf from "rimraf"
+import del from "del"
 
 export type TemporaryFileCache = string
 
@@ -10,7 +10,7 @@ export function createTemporaryFileCache (): TemporaryFileCache {
 }
 
 export function clearTemporaryFileCache (cache: TemporaryFileCache) {
-  rimraf.sync(cache)
+  del.sync([cache])
 }
 
 export function writeBlankHtmlPage (filePath: string) {
