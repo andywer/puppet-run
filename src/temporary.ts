@@ -10,7 +10,7 @@ export function createTemporaryFileCache (): TemporaryFileCache {
 }
 
 export function clearTemporaryFileCache (cache: TemporaryFileCache) {
-  del.sync([cache])
+  del.sync([cache], { force: true })
 }
 
 export function writeBlankHtmlPage (filePath: string) {
